@@ -25,7 +25,7 @@
                         <th>Wholesale</th>
                         <th>Stock</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th class="table-actions-col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,13 +47,17 @@
                                     {{ $product->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('products.edit', $product) }}" class="btn btn-info">Edit</a>
+                            <td class="table-actions-col">
+                                <div class="action-buttons">
+                                    <a href="{{ route('products.edit', $product) }}" class="btn btn-info btn-sm action-icon-btn" title="Edit product" aria-label="Edit product">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
                                     <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('Delete this product?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                        <button type="submit" class="btn btn-danger btn-sm action-icon-btn" title="Delete product" aria-label="Delete product">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </form>
                                 </div>
                             </td>

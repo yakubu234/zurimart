@@ -6,8 +6,10 @@ use App\Models\Branch;
 use App\Models\BranchCapacitySlot;
 use App\Models\Order;
 use App\Models\AppSetting;
+use App\Models\Permission;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Role;
 use App\Models\SystemNotification;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -22,10 +24,44 @@ class DatabaseSeeder extends Seeder
         SystemNotification::query()->delete();
         BranchCapacitySlot::query()->delete();
         User::query()->delete();
+        Role::query()->delete();
+        Permission::query()->delete();
         Product::query()->delete();
         ProductCategory::query()->delete();
         AppSetting::query()->delete();
         Branch::query()->delete();
+
+        $permissions = collect(config('access.permissions', []))
+            ->mapWithKeys(function (array $permission) {
+                $record = Permission::query()->create([
+                    'slug' => $permission['slug'],
+                    'name' => $permission['name'],
+                    'group' => $permission['group'],
+                    'description' => $permission['description'] ?? null,
+                    'is_system' => true,
+                ]);
+
+                return [$record->slug => $record];
+            });
+
+        $roles = collect(config('access.roles', []))
+            ->mapWithKeys(function (array $role) use ($permissions) {
+                $record = Role::query()->create([
+                    'slug' => $role['slug'],
+                    'name' => $role['name'],
+                    'description' => $role['description'] ?? null,
+                    'is_system' => true,
+                ]);
+
+                $record->permissions()->sync(
+                    collect($role['permissions'] ?? [])
+                        ->map(fn (string $slug) => $permissions[$slug]->id ?? null)
+                        ->filter()
+                        ->all()
+                );
+
+                return [$record->slug => $record];
+            });
 
         $branches = collect([
             [
@@ -100,7 +136,13 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
-            User::query()->create($user + ['password' => Hash::make('password')]);
+            $role = $roles[$user['role']];
+
+            User::query()->create($user + [
+                'role_code' => $role->slug,
+                'role_id' => $role->id,
+                'password' => Hash::make('password'),
+            ]);
         }
 
         foreach ($branches as $branch) {

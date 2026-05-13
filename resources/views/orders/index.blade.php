@@ -24,7 +24,7 @@
                         <th>Tier</th>
                         <th>Total</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th class="table-actions-col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -44,18 +44,18 @@
                             <td>@include('partials.badge', ['value' => $order->pricing_tier])</td>
                             <td>N{{ number_format($order->total_amount, 0) }}</td>
                             <td>@include('partials.badge', ['value' => $order->status])</td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('orders.show', $order) }}" class="btn btn-default">Receipt</a>
+                            <td class="table-actions-col">
+                                <div class="action-buttons">
+                                    <a href="{{ route('orders.show', $order) }}" class="btn btn-default btn-sm action-text-btn">Receipt</a>
                                     @if ($order->status === 'pending')
                                         <form action="{{ route('orders.accept', $order) }}" method="POST">
                                             @csrf
-                                            <button type="submit" class="btn btn-success">Accept</button>
+                                            <button type="submit" class="btn btn-success btn-sm action-text-btn">Accept</button>
                                         </form>
                                         <form action="{{ route('orders.reject', $order) }}" method="POST">
                                             @csrf
                                             <input type="hidden" name="rejection_reason" value="Branch manager rejected the order due to live oven capacity.">
-                                            <button type="submit" class="btn btn-danger">Reject</button>
+                                            <button type="submit" class="btn btn-danger btn-sm action-text-btn">Reject</button>
                                         </form>
                                     @endif
                                 </div>

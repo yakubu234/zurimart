@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
+use App\Models\Permission;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,36 +23,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('view-dashboard', fn (User $user) => $user->hasAnyRole([
-            'super_admin',
-            'production_branch_manager',
-            'internal_outlet',
-            'whole_marketer',
-        ]));
+        Gate::before(function (User $user, string $ability) {
+            if ($user->status !== 'active') {
+                return false;
+            }
 
-        Gate::define('view-orders', fn (User $user) => $user->hasAnyRole([
-            'super_admin',
-            'production_branch_manager',
-            'internal_outlet',
-            'whole_marketer',
-        ]));
+            return null;
+        });
 
-        Gate::define('manage-order-approvals', fn (User $user) => $user->hasAnyRole([
-            'super_admin',
-            'production_branch_manager',
-        ]));
+        $abilities = collect(config('access.permissions', []))
+            ->pluck('slug')
+            ->filter()
+            ->values()
+            ->all();
 
-        Gate::define('manage-branches', fn (User $user) => $user->hasAnyRole([
-            'super_admin',
-            'production_branch_manager',
-        ]));
+        if (Schema::hasTable('permissions')) {
+            $abilities = array_values(array_unique(array_merge(
+                $abilities,
+                Permission::query()->pluck('slug')->filter()->all()
+            )));
+        }
 
-        Gate::define('manage-branch-master-data', fn (User $user) => $user->hasRole('super_admin'));
-        Gate::define('manage-products', fn (User $user) => $user->hasAnyRole(['super_admin', 'production_branch_manager']));
-        Gate::define('manage-categories', fn (User $user) => $user->hasRole('super_admin'));
-        Gate::define('view-bookings', fn (User $user) => $user->hasAnyRole(['super_admin', 'production_branch_manager', 'whole_marketer']));
-        Gate::define('view-reports', fn (User $user) => $user->hasAnyRole(['super_admin', 'production_branch_manager']));
-        Gate::define('manage-users', fn (User $user) => $user->hasRole('super_admin'));
-        Gate::define('manage-integration-settings', fn (User $user) => $user->hasRole('super_admin'));
+        foreach ($abilities as $ability) {
+            Gate::define($ability, fn (User $user) => $user->hasPermission($ability));
+        }
     }
 }

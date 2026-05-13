@@ -28,6 +28,14 @@ class LoginController extends Controller
                 ->onlyInput('email');
         }
 
+        if ($request->user()?->status !== 'active') {
+            Auth::logout();
+
+            return back()
+                ->withErrors(['email' => 'This account is suspended. Please contact an administrator.'])
+                ->onlyInput('email');
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));

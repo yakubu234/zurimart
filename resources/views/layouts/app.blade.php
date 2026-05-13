@@ -2,6 +2,43 @@
 
 @section('title', trim($__env->yieldContent('title', 'ZuriMart Bakery')))
 
+@section('css')
+    <style>
+        .table-actions-col {
+            width: 1%;
+            white-space: nowrap;
+        }
+
+        .action-buttons {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: nowrap;
+        }
+
+        .action-buttons form {
+            margin: 0;
+        }
+
+        .action-icon-btn {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-icon-btn i {
+            font-size: 0.9rem;
+        }
+
+        .action-text-btn {
+            min-width: 2.5rem;
+        }
+    </style>
+@stop
+
 @section('content_header')
     <div class="row mb-2">
         <div class="col-sm-8">

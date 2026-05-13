@@ -366,6 +366,18 @@ return [
             'can' => 'manage-users',
         ],
         [
+            'text' => 'Roles',
+            'route' => 'roles.index',
+            'icon' => 'fas fa-fw fa-user-shield',
+            'can' => 'manage-roles',
+        ],
+        [
+            'text' => 'Permissions',
+            'route' => 'permissions.index',
+            'icon' => 'fas fa-fw fa-key',
+            'can' => 'manage-permissions',
+        ],
+        [
             'text' => 'Integration Settings',
             'route' => 'settings.edit',
             'icon' => 'fas fa-fw fa-cogs',

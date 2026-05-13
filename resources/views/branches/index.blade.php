@@ -22,7 +22,7 @@
                         <th>Contact</th>
                         <th>Capacity</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th class="table-actions-col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,13 +42,17 @@
                             <td>{{ $branch->phone }}<br><small class="text-muted">{{ $branch->email }}</small></td>
                             <td>{{ $used }} / {{ $capacity }} units</td>
                             <td>@include('partials.badge', ['value' => $branch->status])</td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('branches.edit', $branch) }}" class="btn btn-info">Edit</a>
+                            <td class="table-actions-col">
+                                <div class="action-buttons">
+                                    <a href="{{ route('branches.edit', $branch) }}" class="btn btn-info btn-sm action-icon-btn" title="Edit branch" aria-label="Edit branch">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
                                     <form action="{{ route('branches.destroy', $branch) }}" method="POST" onsubmit="return confirm('Delete this branch?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                        <button type="submit" class="btn btn-danger btn-sm action-icon-btn" title="Delete branch" aria-label="Delete branch">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </form>
                                 </div>
                             </td>
