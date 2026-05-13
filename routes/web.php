@@ -17,7 +17,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 });
 
-Route::get('/', DashboardController::class)->middleware(['auth', 'role:super_admin,production_branch_manager,internal_outlet,whole_marketer'])->name('dashboard');
+Route::view('/', 'welcome')->name('home');
+Route::get('/admin', DashboardController::class)->middleware(['auth', 'role:super_admin,production_branch_manager,internal_outlet,whole_marketer'])->name('dashboard');
 Route::get('/orders', [OrderController::class, 'index'])->middleware(['auth', 'role:super_admin,production_branch_manager,internal_outlet,whole_marketer'])->name('orders.index');
 Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
