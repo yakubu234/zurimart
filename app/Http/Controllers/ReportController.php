@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
+use App\Models\BranchInventorySnapshot;
+use App\Models\BranchStockBatch;
 use App\Models\Order;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
@@ -42,6 +45,37 @@ class ReportController extends Controller
             ->orderByDesc('orders_count')
             ->get();
 
-        return view('reports.index', compact('salesTrend', 'branchPerformance'));
+        $inventoryDate = now()->toDateString();
+        $branchIds = Branch::query()
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id))
+            ->pluck('id');
+
+        $inventoryPerformance = Branch::query()
+            ->whereIn('id', $branchIds)
+            ->orderBy('name')
+            ->get()
+            ->map(function (Branch $branch) use ($inventoryDate) {
+                $snapshotQuery = BranchInventorySnapshot::query()
+                    ->where('branch_id', $branch->id)
+                    ->whereDate('inventory_date', $inventoryDate);
+
+                return [
+                    'branch' => $branch,
+                    'opening_units' => (int) (clone $snapshotQuery)->sum('opening_units'),
+                    'produced_units' => (int) (clone $snapshotQuery)->sum('produced_units'),
+                    'sold_units' => (int) (clone $snapshotQuery)->sum('sold_units'),
+                    'closing_units' => (int) (clone $snapshotQuery)->sum('closing_units'),
+                ];
+            });
+
+        $staleStockBatches = BranchStockBatch::query()
+            ->with(['branch', 'product'])
+            ->whereIn('branch_id', $branchIds)
+            ->where('remaining_units', '>', 0)
+            ->whereDate('produced_date', '<=', now()->subHours(72)->toDateString())
+            ->orderBy('produced_date')
+            ->get();
+
+        return view('reports.index', compact('salesTrend', 'branchPerformance', 'inventoryPerformance', 'staleStockBatches'));
     }
 }

@@ -347,6 +347,12 @@ return [
             'can' => 'manage-products',
         ],
         [
+            'text' => 'Inventory',
+            'route' => 'inventory.index',
+            'icon' => 'fas fa-fw fa-boxes',
+            'can' => 'manage-inventory',
+        ],
+        [
             'text' => 'Product Types',
             'route' => 'categories.index',
             'icon' => 'fas fa-fw fa-tags',

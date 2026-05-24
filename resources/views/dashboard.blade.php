@@ -63,6 +63,36 @@
     </div>
 
     <div class="row">
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-gradient-primary">
+                <div class="inner">
+                    <h3>{{ $openingUnits }}</h3>
+                    <p>Opening Units Today</p>
+                </div>
+                <div class="icon"><i class="fas fa-door-open"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-gradient-success">
+                <div class="inner">
+                    <h3>{{ $closingUnits }}</h3>
+                    <p>Closing Units Today</p>
+                </div>
+                <div class="icon"><i class="fas fa-warehouse"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-12">
+            <div class="small-box bg-gradient-danger">
+                <div class="inner">
+                    <h3>{{ $staleStockCount }}</h3>
+                    <p>Stale Stock Batches</p>
+                </div>
+                <div class="icon"><i class="fas fa-hourglass-end"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-lg-8">
             <div class="card card-outline card-warning">
                 <div class="card-header">
@@ -119,6 +149,39 @@
                                     <td>@include('partials.badge', ['value' => $order->pricing_tier])</td>
                                     <td>N{{ number_format($order->total_amount, 0) }}</td>
                                     <td>@include('partials.badge', ['value' => $order->status])</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title">Branch Inventory Today</h3>
+                    <div class="card-tools">
+                        <a href="{{ route('inventory.index') }}" class="btn btn-sm btn-default">Open Inventory</a>
+                    </div>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-striped table-hover text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th>Opening</th>
+                                <th>Produced</th>
+                                <th>Sold</th>
+                                <th>Closing</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($inventorySummary as $row)
+                                <tr>
+                                    <td>{{ $row['branch']->name }}</td>
+                                    <td>{{ $row['opening_units'] }}</td>
+                                    <td>{{ $row['produced_units'] }}</td>
+                                    <td>{{ $row['sold_units'] }}</td>
+                                    <td><strong>{{ $row['closing_units'] }}</strong></td>
                                 </tr>
                             @endforeach
                         </tbody>

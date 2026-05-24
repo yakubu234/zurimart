@@ -46,6 +46,9 @@ class SettingsController extends Controller
             'event_order_rejected' => ['nullable', 'boolean'],
             'event_low_stock' => ['nullable', 'boolean'],
             'event_branch_overbooked' => ['nullable', 'boolean'],
+            'event_opening_stock' => ['nullable', 'boolean'],
+            'event_closing_stock' => ['nullable', 'boolean'],
+            'event_stale_stock' => ['nullable', 'boolean'],
         ]);
 
         $currentEmailPassword = $this->settings->get('notifications.email_password');
@@ -73,6 +76,9 @@ class SettingsController extends Controller
             'notifications.event_order_rejected' => $request->boolean('event_order_rejected', true),
             'notifications.event_low_stock' => $request->boolean('event_low_stock', true),
             'notifications.event_branch_overbooked' => $request->boolean('event_branch_overbooked', true),
+            'notifications.event_opening_stock' => $request->boolean('event_opening_stock', true),
+            'notifications.event_closing_stock' => $request->boolean('event_closing_stock', true),
+            'notifications.event_stale_stock' => $request->boolean('event_stale_stock', true),
         ];
 
         $this->settings->setMany('notifications', $normalized, [

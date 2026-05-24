@@ -6,6 +6,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
@@ -45,6 +46,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->middleware('can:manage-products')->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('can:manage-products')->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('can:manage-products')->name('products.destroy');
+    Route::get('/inventory', [InventoryController::class, 'index'])->middleware('can:manage-inventory')->name('inventory.index');
+    Route::put('/inventory', [InventoryController::class, 'update'])->middleware('can:manage-inventory')->name('inventory.update');
     Route::get('/categories', [ProductCategoryController::class, 'index'])->middleware('can:manage-categories')->name('categories.index');
     Route::get('/categories/create', [ProductCategoryController::class, 'create'])->middleware('can:manage-categories')->name('categories.create');
     Route::post('/categories', [ProductCategoryController::class, 'store'])->middleware('can:manage-categories')->name('categories.store');

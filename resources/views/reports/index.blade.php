@@ -52,4 +52,56 @@
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card card-outline card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">Branch Inventory Summary</h3>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-striped table-hover text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th>Opening</th>
+                                <th>Produced</th>
+                                <th>Sold</th>
+                                <th>Closing</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($inventoryPerformance as $row)
+                                <tr>
+                                    <td>{{ $row['branch']->name }}</td>
+                                    <td>{{ $row['opening_units'] }}</td>
+                                    <td>{{ $row['produced_units'] }}</td>
+                                    <td>{{ $row['sold_units'] }}</td>
+                                    <td><strong>{{ $row['closing_units'] }}</strong></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card card-outline card-danger">
+                <div class="card-header">
+                    <h3 class="card-title">72-Hour Stale Stock</h3>
+                </div>
+                <div class="card-body">
+                    @forelse ($staleStockBatches as $batch)
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong>{{ $batch->branch?->name }}</strong><br>
+                            <span>{{ $batch->product?->name }}</span><br>
+                            <small class="text-muted">{{ $batch->remaining_units }} units unsold since {{ $batch->produced_date->format('d M Y') }}</small>
+                        </div>
+                    @empty
+                        <p class="text-muted mb-0">No stale stock batches older than 72 hours right now.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

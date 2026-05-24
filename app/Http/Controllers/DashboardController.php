@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\BranchInventorySnapshot;
+use App\Models\BranchStockBatch;
 use App\Models\BranchCapacitySlot;
 use App\Models\Order;
 use App\Models\Product;
@@ -93,6 +95,54 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
-        return view('dashboard', compact('stats', 'recentOrders', 'branches', 'salesTrend', 'branchPerformance', 'notifications'));
+        $inventoryDate = $today;
+        $inventoryBranchIds = (clone $branchesQuery)->pluck('id');
+
+        $openingUnits = (int) BranchInventorySnapshot::query()
+            ->whereIn('branch_id', $inventoryBranchIds)
+            ->whereDate('inventory_date', $inventoryDate)
+            ->sum('opening_units');
+
+        $closingUnits = (int) BranchInventorySnapshot::query()
+            ->whereIn('branch_id', $inventoryBranchIds)
+            ->whereDate('inventory_date', $inventoryDate)
+            ->sum('closing_units');
+
+        $staleStockCount = BranchStockBatch::query()
+            ->whereIn('branch_id', $inventoryBranchIds)
+            ->where('remaining_units', '>', 0)
+            ->whereDate('produced_date', '<=', now()->subHours(72)->toDateString())
+            ->count();
+
+        $inventorySummary = Branch::query()
+            ->whereIn('id', $inventoryBranchIds)
+            ->orderBy('name')
+            ->get()
+            ->map(function (Branch $branch) use ($inventoryDate) {
+                $snapshotQuery = BranchInventorySnapshot::query()
+                    ->where('branch_id', $branch->id)
+                    ->whereDate('inventory_date', $inventoryDate);
+
+                return [
+                    'branch' => $branch,
+                    'opening_units' => (int) (clone $snapshotQuery)->sum('opening_units'),
+                    'produced_units' => (int) (clone $snapshotQuery)->sum('produced_units'),
+                    'sold_units' => (int) (clone $snapshotQuery)->sum('sold_units'),
+                    'closing_units' => (int) (clone $snapshotQuery)->sum('closing_units'),
+                ];
+            });
+
+        return view('dashboard', compact(
+            'stats',
+            'recentOrders',
+            'branches',
+            'salesTrend',
+            'branchPerformance',
+            'notifications',
+            'openingUnits',
+            'closingUnits',
+            'staleStockCount',
+            'inventorySummary'
+        ));
     }
 }

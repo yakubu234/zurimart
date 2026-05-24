@@ -154,6 +154,24 @@
                                         @checked(old('event_branch_overbooked', filter_var($notificationSettings['notifications.event_branch_overbooked'] ?? true, FILTER_VALIDATE_BOOL)))>
                                     <label class="form-check-label" for="event_branch_overbooked">When a branch becomes overly booked</label>
                                 </div>
+                                <div class="form-check mb-3">
+                                    <input type="hidden" name="event_opening_stock" value="0">
+                                    <input type="checkbox" name="event_opening_stock" value="1" class="form-check-input" id="event_opening_stock"
+                                        @checked(old('event_opening_stock', filter_var($notificationSettings['notifications.event_opening_stock'] ?? true, FILTER_VALIDATE_BOOL)))>
+                                    <label class="form-check-label" for="event_opening_stock">Daily opening stock summary</label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="hidden" name="event_closing_stock" value="0">
+                                    <input type="checkbox" name="event_closing_stock" value="1" class="form-check-input" id="event_closing_stock"
+                                        @checked(old('event_closing_stock', filter_var($notificationSettings['notifications.event_closing_stock'] ?? true, FILTER_VALIDATE_BOOL)))>
+                                    <label class="form-check-label" for="event_closing_stock">Daily closing stock summary</label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="hidden" name="event_stale_stock" value="0">
+                                    <input type="checkbox" name="event_stale_stock" value="1" class="form-check-input" id="event_stale_stock"
+                                        @checked(old('event_stale_stock', filter_var($notificationSettings['notifications.event_stale_stock'] ?? true, FILTER_VALIDATE_BOOL)))>
+                                    <label class="form-check-label" for="event_stale_stock">72-hour stale stock summary</label>
+                                </div>
                                 <div class="form-group mt-3">
                                     <label>Low Stock Threshold</label>
                                     <input type="number" name="low_stock_threshold" class="form-control" value="{{ old('low_stock_threshold', $notificationSettings['notifications.low_stock_threshold'] ?? 150) }}" min="0">
