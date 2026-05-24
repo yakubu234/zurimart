@@ -61,7 +61,7 @@ class DashboardController extends Controller
             });
 
         $salesTrend = collect(range(0, 6))
-            ->map(function (int $offset) {
+            ->map(function (int $offset) use ($user) {
                 $date = Carbon::now()->subDays(6 - $offset)->toDateString();
 
                 return [
