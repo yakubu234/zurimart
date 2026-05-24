@@ -47,6 +47,9 @@
                             <td class="table-actions-col">
                                 <div class="action-buttons">
                                     <a href="{{ route('orders.show', $order) }}" class="btn btn-default btn-sm action-text-btn">Receipt</a>
+                                    @if ($order->status !== 'completed' && auth()->user()?->canEditOrder($order))
+                                        <a href="{{ route('orders.edit', $order) }}" class="btn btn-info btn-sm action-text-btn">Edit</a>
+                                    @endif
                                     @if ($order->status === 'pending')
                                         <form action="{{ route('orders.accept', $order) }}" method="POST">
                                             @csrf
@@ -56,6 +59,13 @@
                                             @csrf
                                             <input type="hidden" name="rejection_reason" value="Branch manager rejected the order due to live oven capacity.">
                                             <button type="submit" class="btn btn-danger btn-sm action-text-btn">Reject</button>
+                                        </form>
+                                    @endif
+                                    @if (auth()->user()?->hasRole('super_admin'))
+                                        <form action="{{ route('orders.destroy', $order) }}" method="POST" onsubmit="return confirm('Delete this order permanently?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm action-text-btn">Delete</button>
                                         </form>
                                     @endif
                                 </div>

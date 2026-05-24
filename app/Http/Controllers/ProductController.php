@@ -54,6 +54,8 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        abort_unless(request()->user()?->canDeleteProducts(), 403);
+
         if ($product->orderItems()->exists()) {
             return back()->withErrors(['product' => 'This product is already used in orders and cannot be deleted. You can edit or deactivate it instead.']);
         }

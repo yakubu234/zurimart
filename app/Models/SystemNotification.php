@@ -13,6 +13,7 @@ class SystemNotification extends Model
     protected $fillable = [
         'branch_id',
         'order_id',
+        'event_key',
         'channel',
         'recipient',
         'title',

@@ -25,6 +25,9 @@ Route::get('/orders', [OrderController::class, 'index'])->middleware(['auth', 'c
 Route::get('/orders/create', [OrderController::class, 'create'])->middleware(['auth', 'can:view-orders'])->name('orders.create');
 Route::post('/orders', [OrderController::class, 'store'])->middleware(['auth', 'can:view-orders'])->name('orders.store');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware(['auth', 'can:view-orders'])->name('orders.show');
+Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->middleware(['auth', 'can:view-orders'])->name('orders.edit');
+Route::put('/orders/{order}', [OrderController::class, 'update'])->middleware(['auth', 'can:view-orders'])->name('orders.update');
+Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->middleware(['auth', 'role:super_admin'])->name('orders.destroy');
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {

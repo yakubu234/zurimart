@@ -14,6 +14,7 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'branch_id',
+        'created_by',
         'customer_name',
         'customer_email',
         'customer_phone',
@@ -48,6 +49,11 @@ class Order extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items(): HasMany

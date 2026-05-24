@@ -48,19 +48,22 @@ class SettingsController extends Controller
             'event_branch_overbooked' => ['nullable', 'boolean'],
         ]);
 
+        $currentEmailPassword = $this->settings->get('notifications.email_password');
+        $currentWhatsAppToken = $this->settings->get('notifications.whatsapp_token');
+
         $normalized = [
             'notifications.email_enabled' => $request->boolean('email_enabled'),
             'notifications.email_host' => $data['email_host'] ?? null,
             'notifications.email_port' => $data['email_port'] ?? null,
             'notifications.email_encryption' => $data['email_encryption'] ?? null,
             'notifications.email_username' => $data['email_username'] ?? null,
-            'notifications.email_password' => $data['email_password'] ?? null,
+            'notifications.email_password' => filled($data['email_password'] ?? null) ? $data['email_password'] : $currentEmailPassword,
             'notifications.email_from_address' => $data['email_from_address'] ?? null,
             'notifications.email_from_name' => $data['email_from_name'] ?? null,
             'notifications.admin_email_recipient' => $data['admin_email_recipient'] ?? null,
             'notifications.whatsapp_enabled' => $request->boolean('whatsapp_enabled'),
             'notifications.whatsapp_api_url' => $data['whatsapp_api_url'] ?? null,
-            'notifications.whatsapp_token' => $data['whatsapp_token'] ?? null,
+            'notifications.whatsapp_token' => filled($data['whatsapp_token'] ?? null) ? $data['whatsapp_token'] : $currentWhatsAppToken,
             'notifications.whatsapp_phone_number_id' => $data['whatsapp_phone_number_id'] ?? null,
             'notifications.whatsapp_from_number' => $data['whatsapp_from_number'] ?? null,
             'notifications.admin_whatsapp_recipient' => $data['admin_whatsapp_recipient'] ?? null,

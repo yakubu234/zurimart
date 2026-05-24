@@ -45,7 +45,8 @@
                         </div>
                         <div class="form-group">
                             <label>SMTP Password</label>
-                            <input type="password" name="email_password" class="form-control" value="{{ old('email_password', $notificationSettings['notifications.email_password'] ?? '') }}">
+                            <input type="password" name="email_password" class="form-control" value="">
+                            <small class="text-muted">Leave blank to keep the current SMTP password.</small>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -87,7 +88,8 @@
                         </div>
                         <div class="form-group">
                             <label>WhatsApp Token</label>
-                            <input type="password" name="whatsapp_token" class="form-control" value="{{ old('whatsapp_token', $notificationSettings['notifications.whatsapp_token'] ?? '') }}">
+                            <input type="password" name="whatsapp_token" class="form-control" value="">
+                            <small class="text-muted">Leave blank to keep the current WhatsApp token.</small>
                         </div>
                         <div class="form-group">
                             <label>Phone Number ID</label>
@@ -102,7 +104,7 @@
                             <input type="text" name="admin_whatsapp_recipient" class="form-control" value="{{ old('admin_whatsapp_recipient', $notificationSettings['notifications.admin_whatsapp_recipient'] ?? '') }}" placeholder="e.g. +2348012345678">
                         </div>
                         <div class="alert alert-warning mb-0">
-                            Use the API format required by your WhatsApp provider. This screen stores the credentials and the delivery service uses them when a branch is tagged, accepts, or rejects an order.
+                            Use the API format required by your WhatsApp provider. Branch order alerts are sent to the tagged branch's WhatsApp phone first, then to its normal phone if no WhatsApp number is saved.
                         </div>
                     </div>
                 </div>
@@ -167,6 +169,10 @@
             </div>
         </div>
 
+        <div class="alert alert-secondary">
+            Branch delivery contacts are managed on each branch record, and per-user or per-branch notification opt-outs are managed on the User and Branch screens.
+        </div>
+
         <div class="card">
             <div class="card-footer">
                 <button type="submit" class="btn btn-warning">Save Integration Settings</button>
@@ -182,6 +188,7 @@
             <table class="table table-striped table-hover text-nowrap">
                 <thead>
                     <tr>
+                        <th>Event</th>
                         <th>Channel</th>
                         <th>Recipient</th>
                         <th>Title</th>
@@ -193,6 +200,7 @@
                 <tbody>
                     @foreach ($recentNotifications as $notification)
                         <tr>
+                            <td>{{ str_replace('_', ' ', $notification->event_key ?: 'general') }}</td>
                             <td>{{ strtoupper($notification->channel) }}</td>
                             <td>{{ $notification->recipient ?: 'Not stored' }}</td>
                             <td>{{ $notification->title }}</td>

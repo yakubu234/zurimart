@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\SystemNotification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -17,25 +18,32 @@ class DashboardController extends Controller
     {
         $today = now()->toDateString();
         $weekStart = now()->startOfWeek()->toDateString();
+        $user = Auth::user();
+
+        $ordersQuery = Order::query()
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id));
+
+        $branchesQuery = Branch::query()
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id));
 
         $stats = [
-            'totalRevenue' => (float) Order::query()->where('status', 'accepted')->sum('total_amount'),
-            'totalOrders' => Order::query()->count(),
-            'pendingOrders' => Order::query()->where('status', 'pending')->count(),
-            'activeBranches' => Branch::query()->where('status', 'available')->count(),
+            'totalRevenue' => (float) (clone $ordersQuery)->where('status', 'accepted')->sum('total_amount'),
+            'totalOrders' => (clone $ordersQuery)->count(),
+            'pendingOrders' => (clone $ordersQuery)->where('status', 'pending')->count(),
+            'activeBranches' => (clone $branchesQuery)->where('status', 'available')->count(),
             'lowStockItems' => Product::query()->where('stock_units', '<', 150)->count(),
             'wholesaleShare' => (int) round(
-                ((int) Order::query()->where('pricing_tier', 'wholesale')->sum('total_units') / max((int) Order::query()->sum('total_units'), 1)) * 100
+                ((int) (clone $ordersQuery)->where('pricing_tier', 'wholesale')->sum('total_units') / max((int) (clone $ordersQuery)->sum('total_units'), 1)) * 100
             ),
         ];
 
-        $recentOrders = Order::query()
+        $recentOrders = (clone $ordersQuery)
             ->with('branch')
             ->latest()
             ->take(6)
             ->get();
 
-        $branches = Branch::query()
+        $branches = (clone $branchesQuery)
             ->with(['capacitySlots' => fn ($query) => $query->whereDate('production_date', $today)])
             ->get()
             ->map(function (Branch $branch) {
@@ -56,21 +64,34 @@ class DashboardController extends Controller
 
                 return [
                     'day' => Carbon::parse($date)->format('D'),
-                    'retail' => (int) Order::query()->whereDate('created_at', $date)->where('pricing_tier', 'retail')->sum('total_units'),
-                    'wholesale' => (int) Order::query()->whereDate('created_at', $date)->where('pricing_tier', 'wholesale')->sum('total_units'),
+                    'retail' => (int) Order::query()
+                        ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
+                        ->whereDate('created_at', $date)
+                        ->where('pricing_tier', 'retail')
+                        ->sum('total_units'),
+                    'wholesale' => (int) Order::query()
+                        ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
+                        ->whereDate('created_at', $date)
+                        ->where('pricing_tier', 'wholesale')
+                        ->sum('total_units'),
                 ];
             });
 
         $branchPerformance = Order::query()
             ->select('branches.name', DB::raw('count(orders.id) as orders_count'))
             ->join('branches', 'branches.id', '=', 'orders.branch_id')
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('orders.branch_id', $user->branch_id))
             ->where('orders.status', 'accepted')
             ->whereDate('orders.created_at', '>=', $weekStart)
             ->groupBy('branches.name')
             ->orderByDesc('orders_count')
             ->get();
 
-        $notifications = SystemNotification::query()->latest()->take(3)->get();
+        $notifications = SystemNotification::query()
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
+            ->latest()
+            ->take(3)
+            ->get();
 
         return view('dashboard', compact('stats', 'recentOrders', 'branches', 'salesTrend', 'branchPerformance', 'notifications'));
     }

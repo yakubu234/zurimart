@@ -112,6 +112,44 @@
                     </div>
                     <small class="text-muted">Use direct permissions sparingly. Prefer role-based access for most users.</small>
                 </div>
+
+                <div class="form-group">
+                    <label>User Notification Preferences</label>
+                    <div class="row">
+                        @foreach ($notificationEvents as $eventKey => $label)
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 mb-3">
+                                    <strong class="d-block mb-2">{{ $label }}</strong>
+                                    <div class="form-check mb-2">
+                                        <input type="hidden" name="notification_preferences[{{ $eventKey }}][email]" value="0">
+                                        <input
+                                            type="checkbox"
+                                            name="notification_preferences[{{ $eventKey }}][email]"
+                                            value="1"
+                                            class="form-check-input"
+                                            id="user_{{ $eventKey }}_email"
+                                            @checked(filter_var(data_get(old('notification_preferences', $user->notification_preferences ?? []), "{$eventKey}.email", true), FILTER_VALIDATE_BOOL))
+                                        >
+                                        <label class="form-check-label" for="user_{{ $eventKey }}_email">Email</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="hidden" name="notification_preferences[{{ $eventKey }}][whatsapp]" value="0">
+                                        <input
+                                            type="checkbox"
+                                            name="notification_preferences[{{ $eventKey }}][whatsapp]"
+                                            value="1"
+                                            class="form-check-input"
+                                            id="user_{{ $eventKey }}_whatsapp"
+                                            @checked(filter_var(data_get(old('notification_preferences', $user->notification_preferences ?? []), "{$eventKey}.whatsapp", true), FILTER_VALIDATE_BOOL))
+                                        >
+                                        <label class="form-check-label" for="user_{{ $eventKey }}_whatsapp">WhatsApp</label>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <small class="text-muted">Use this to disable specific alerts for a particular admin, manager, or branch-bound user.</small>
+                </div>
             </div>
             <div class="card-footer">
                 <button type="submit" class="btn btn-warning">{{ $user->exists ? 'Update User' : 'Add User' }}</button>

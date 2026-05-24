@@ -4,12 +4,15 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use App\Models\Order;
+use App\Support\NotificationEvents;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -31,6 +34,7 @@ class User extends Authenticatable
         'role_id',
         'status',
         'password',
+        'notification_preferences',
     ];
 
     /**
@@ -53,6 +57,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -69,6 +74,11 @@ class User extends Authenticatable
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class)->withTimestamps()->orderBy('group')->orderBy('name');
+    }
+
+    public function createdOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'created_by');
     }
 
     public function roleKey(): ?string
@@ -88,6 +98,54 @@ class User extends Authenticatable
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->roleKey(), $roles, true);
+    }
+
+    public function canManageAllBranches(): bool
+    {
+        return $this->hasRole('super_admin') || $this->hasPermission('manage-all-branches');
+    }
+
+    public function isBranchRestricted(): bool
+    {
+        return ! $this->canManageAllBranches() && ! is_null($this->branch_id);
+    }
+
+    public function canAccessBranch(?int $branchId): bool
+    {
+        if ($this->canManageAllBranches()) {
+            return true;
+        }
+
+        if (is_null($this->branch_id) || is_null($branchId)) {
+            return false;
+        }
+
+        return (int) $this->branch_id === (int) $branchId;
+    }
+
+    public function canEditOrder(Order $order): bool
+    {
+        if ($this->canManageAllBranches() || $this->hasPermission('manage-users')) {
+            return true;
+        }
+
+        return ! is_null($order->created_by) && (int) $order->created_by === (int) $this->id;
+    }
+
+    public function canDeleteProducts(): bool
+    {
+        return $this->hasRole('super_admin')
+            || $this->hasPermission('delete-products')
+            || $this->hasPermission('manage-users');
+    }
+
+    public function notificationEnabled(string $eventKey, string $channel): bool
+    {
+        if (! array_key_exists($eventKey, NotificationEvents::USER)) {
+            return true;
+        }
+
+        return (bool) data_get($this->notification_preferences ?? [], "{$eventKey}.{$channel}", true);
     }
 
     public function hasPermission(string $permission): bool

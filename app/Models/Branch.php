@@ -16,10 +16,19 @@ class Branch extends Model
         'manager_name',
         'email',
         'phone',
+        'whatsapp_phone',
+        'notification_preferences',
         'address',
         'daily_capacity_units',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'notification_preferences' => 'array',
+        ];
+    }
 
     public function capacitySlots(): HasMany
     {
@@ -29,5 +38,10 @@ class Branch extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function notificationEnabled(string $eventKey, string $channel): bool
+    {
+        return (bool) data_get($this->notification_preferences ?? [], "{$eventKey}.{$channel}", true);
     }
 }

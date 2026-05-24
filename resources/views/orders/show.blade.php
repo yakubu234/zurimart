@@ -8,6 +8,16 @@
     <div class="mb-3">
         <button class="btn btn-warning" onclick="window.print()">Print / Save PDF</button>
         <a href="{{ route('orders.index') }}" class="btn btn-default">Back to Orders</a>
+        @if ($order->status !== 'completed' && auth()->user()?->canEditOrder($order))
+            <a href="{{ route('orders.edit', $order) }}" class="btn btn-info">Edit Order</a>
+        @endif
+        @if (auth()->user()?->hasRole('super_admin'))
+            <form action="{{ route('orders.destroy', $order) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this order permanently?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger">Delete Order</button>
+            </form>
+        @endif
     </div>
 
     <div class="row">
