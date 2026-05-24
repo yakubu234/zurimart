@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('adjustment_units')->default(0);
             $table->integer('closing_units')->default(0);
             $table->timestamps();
-            $table->unique(['branch_id', 'product_id', 'inventory_date']);
+            $table->unique(['branch_id', 'product_id', 'inventory_date'], 'bis_branch_product_date_uq');
         });
     }
 
