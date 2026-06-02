@@ -9,13 +9,127 @@
         $existingItems = $order->exists ? $order->items->pluck('quantity', 'product_id') : collect();
     @endphp
 
-    <form action="{{ $order->exists ? route('orders.update', $order) : route('orders.store') }}" method="POST">
+    <style>
+        .order-form-page .card-title {
+            font-size: 1.2rem;
+        }
+
+        .order-form-page .card-body {
+            padding: 1.25rem;
+        }
+
+        .order-form-page .form-control,
+        .order-form-page textarea,
+        .order-form-page select,
+        .order-form-page .btn {
+            min-height: 46px;
+        }
+
+        .order-form-page .product-table td,
+        .order-form-page .product-table th {
+            vertical-align: middle;
+        }
+
+        .order-form-page .product-table td:last-child {
+            min-width: 110px;
+        }
+
+        .order-form-page .quantity-input {
+            max-width: 100%;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .order-form-page .order-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 991.98px) {
+            .order-form-page .order-form-sidebar {
+                margin-bottom: 1rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .order-form-page .card-body {
+                padding: 1rem;
+            }
+
+            .order-form-page .card-header,
+            .order-form-page .card-footer {
+                padding: 0.9rem 1rem;
+            }
+
+            .order-form-page .product-table thead {
+                display: none;
+            }
+
+            .order-form-page .product-table,
+            .order-form-page .product-table tbody,
+            .order-form-page .product-table tr,
+            .order-form-page .product-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .order-form-page .product-table tr {
+                border-top: 1px solid #dee2e6;
+                padding: 0.85rem 0;
+            }
+
+            .order-form-page .product-table tbody tr:first-child {
+                border-top: 0;
+            }
+
+            .order-form-page .product-table td {
+                border: 0;
+                padding: 0.35rem 0;
+                text-align: left;
+            }
+
+            .order-form-page .product-table td::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: #6c757d;
+                margin-bottom: 0.2rem;
+            }
+
+            .order-form-page .product-table td[data-label="Product"]::before {
+                margin-bottom: 0.35rem;
+            }
+
+            .order-form-page .product-table td[data-label="Qty"] {
+                padding-top: 0.55rem;
+            }
+
+            .order-form-page .product-table td[data-label="Qty"] .quantity-input {
+                max-width: none;
+                width: 100%;
+            }
+
+            .order-form-page .order-actions {
+                flex-direction: column;
+            }
+
+            .order-form-page .order-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <form action="{{ $order->exists ? route('orders.update', $order) : route('orders.store') }}" method="POST" class="order-form-page">
         @csrf
         @if ($order->exists)
             @method('PUT')
         @endif
         <div class="row">
-            <div class="col-lg-5">
+            <div class="col-lg-5 order-form-sidebar">
                 <div class="card card-warning card-outline">
                     <div class="card-header"><h3 class="card-title">Customer and Routing Details</h3></div>
                     <div class="card-body">
@@ -72,7 +186,7 @@
                 <div class="card">
                     <div class="card-header"><h3 class="card-title">Product Quantities</h3></div>
                     <div class="card-body table-responsive p-0">
-                        <table class="table table-striped mb-0">
+                        <table class="table table-striped mb-0 product-table">
                             <thead>
                                 <tr>
                                     <th>Product</th>
@@ -86,16 +200,16 @@
                             <tbody>
                                 @foreach ($products as $product)
                                     <tr>
-                                        <td>
+                                        <td data-label="Product">
                                             <strong>{{ $product->name }}</strong><br>
                                             <small class="text-muted">{{ $product->weight_grams }}g</small>
                                         </td>
-                                        <td>{{ $product->category }}</td>
-                                        <td>N{{ number_format($product->retail_price, 0) }}</td>
-                                        <td>N{{ number_format($product->wholesale_price, 0) }}</td>
-                                        <td>{{ $product->stock_units }}</td>
-                                        <td>
-                                            <input type="number" min="0" name="items[{{ $product->id }}]" value="{{ old('items.' . $product->id, $existingItems[$product->id] ?? 0) }}" class="form-control">
+                                        <td data-label="Category">{{ $product->category }}</td>
+                                        <td data-label="Retail">N{{ number_format($product->retail_price, 0) }}</td>
+                                        <td data-label="Wholesale">N{{ number_format($product->wholesale_price, 0) }}</td>
+                                        <td data-label="Stock">{{ $product->stock_units }}</td>
+                                        <td data-label="Qty">
+                                            <input type="number" min="0" inputmode="numeric" name="items[{{ $product->id }}]" value="{{ old('items.' . $product->id, $existingItems[$product->id] ?? 0) }}" class="form-control quantity-input">
                                         </td>
                                     </tr>
                                 @endforeach
@@ -103,12 +217,14 @@
                         </table>
                     </div>
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-warning">{{ $order->exists ? 'Save Order Changes' : 'Submit for Branch Approval' }}</button>
-                        @auth
-                            <a href="{{ $order->exists ? route('orders.show', $order) : route('orders.index') }}" class="btn btn-default">Cancel</a>
-                        @else
-                            <a href="{{ route('login') }}" class="btn btn-default">Admin Login</a>
-                        @endauth
+                        <div class="order-actions">
+                            <button type="submit" class="btn btn-warning">{{ $order->exists ? 'Save Order Changes' : 'Submit for Branch Approval' }}</button>
+                            @auth
+                                <a href="{{ $order->exists ? route('orders.show', $order) : route('orders.index') }}" class="btn btn-default">Cancel</a>
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-default">Admin Login</a>
+                            @endauth
+                        </div>
                     </div>
                 </div>
             </div>

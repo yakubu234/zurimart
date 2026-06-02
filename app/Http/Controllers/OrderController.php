@@ -74,9 +74,17 @@ class OrderController extends Controller
             throw $exception;
         }
 
+        $successMessage = "Order {$order->order_number} created and tagged to {$order->branch->name}.";
+
+        if (! $request->user()) {
+            return redirect()
+                ->route('orders.create')
+                ->with('success', $successMessage . ' Our production team can now review it.');
+        }
+
         return redirect()
             ->route('orders.show', $order)
-            ->with('success', "Order {$order->order_number} created and tagged to {$order->branch->name}.");
+            ->with('success', $successMessage);
     }
 
     public function edit(Order $order): View
@@ -99,7 +107,7 @@ class OrderController extends Controller
                     ->where(function ($branchQuery) use ($order) {
                         $branchQuery
                             ->where('status', 'available')
-                            ->orWhereKey($order->branch_id);
+                            ->orWhere('id', $order->branch_id);
                     })
             )
             ->orderBy('name')

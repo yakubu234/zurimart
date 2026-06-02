@@ -16,6 +16,13 @@ class ReportController extends Controller
     public function index(): View
     {
         $user = Auth::user();
+        $inventoryBranchIds = Branch::query()
+            ->when(
+                $user?->canManageAllInventory(),
+                fn ($query) => $query,
+                fn ($query) => $query->when($user?->branch_id, fn ($branchQuery) => $branchQuery->whereKey($user->branch_id))
+            )
+            ->pluck('id');
 
         $salesTrend = collect(range(0, 6))
             ->map(function (int $offset) use ($user) {
@@ -46,12 +53,8 @@ class ReportController extends Controller
             ->get();
 
         $inventoryDate = now()->toDateString();
-        $branchIds = Branch::query()
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id))
-            ->pluck('id');
-
         $inventoryPerformance = Branch::query()
-            ->whereIn('id', $branchIds)
+            ->whereIn('id', $inventoryBranchIds)
             ->orderBy('name')
             ->get()
             ->map(function (Branch $branch) use ($inventoryDate) {
@@ -70,7 +73,7 @@ class ReportController extends Controller
 
         $staleStockBatches = BranchStockBatch::query()
             ->with(['branch', 'product'])
-            ->whereIn('branch_id', $branchIds)
+            ->whereIn('branch_id', $inventoryBranchIds)
             ->where('remaining_units', '>', 0)
             ->whereDate('produced_date', '<=', now()->subHours(72)->toDateString())
             ->orderBy('produced_date')

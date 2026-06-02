@@ -110,6 +110,30 @@ class User extends Authenticatable
         return ! $this->canManageAllBranches() && ! is_null($this->branch_id);
     }
 
+    public function canManageAllInventory(): bool
+    {
+        return $this->canManageAllBranches()
+            || $this->hasPermission('manage-all-inventory');
+    }
+
+    public function isInventoryRestricted(): bool
+    {
+        return ! $this->canManageAllInventory() && ! is_null($this->branch_id);
+    }
+
+    public function canAccessInventoryBranch(?int $branchId): bool
+    {
+        if ($this->canManageAllInventory()) {
+            return true;
+        }
+
+        if (is_null($this->branch_id) || is_null($branchId)) {
+            return false;
+        }
+
+        return (int) $this->branch_id === (int) $branchId;
+    }
+
     public function canAccessBranch(?int $branchId): bool
     {
         if ($this->canManageAllBranches()) {

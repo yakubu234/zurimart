@@ -7,8 +7,8 @@ use App\Models\BranchInventorySnapshot;
 use App\Models\BranchStockBatch;
 use App\Models\BranchCapacitySlot;
 use App\Models\Order;
-use App\Models\Product;
 use App\Models\SystemNotification;
+use App\Services\AppSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +21,14 @@ class DashboardController extends Controller
         $today = now()->toDateString();
         $weekStart = now()->startOfWeek()->toDateString();
         $user = Auth::user();
+        $inventoryBranchIds = Branch::query()
+            ->when(
+                $user?->canManageAllInventory(),
+                fn ($query) => $query,
+                fn ($query) => $query->when($user?->branch_id, fn ($branchQuery) => $branchQuery->whereKey($user->branch_id))
+            )
+            ->pluck('id');
+        $lowStockThreshold = (int) app(AppSettingsService::class)->get('notifications.low_stock_threshold', 150);
 
         $ordersQuery = Order::query()
             ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id));
@@ -33,7 +41,7 @@ class DashboardController extends Controller
             'totalOrders' => (clone $ordersQuery)->count(),
             'pendingOrders' => (clone $ordersQuery)->where('status', 'pending')->count(),
             'activeBranches' => (clone $branchesQuery)->where('status', 'available')->count(),
-            'lowStockItems' => Product::query()->where('stock_units', '<', 150)->count(),
+            'lowStockItems' => $this->lowStockProductCount($inventoryBranchIds->all(), $lowStockThreshold),
             'wholesaleShare' => (int) round(
                 ((int) (clone $ordersQuery)->where('pricing_tier', 'wholesale')->sum('total_units') / max((int) (clone $ordersQuery)->sum('total_units'), 1)) * 100
             ),
@@ -96,7 +104,6 @@ class DashboardController extends Controller
             ->get();
 
         $inventoryDate = $today;
-        $inventoryBranchIds = (clone $branchesQuery)->pluck('id');
 
         $openingUnits = (int) BranchInventorySnapshot::query()
             ->whereIn('branch_id', $inventoryBranchIds)
@@ -144,5 +151,29 @@ class DashboardController extends Controller
             'staleStockCount',
             'inventorySummary'
         ));
+    }
+
+    protected function lowStockProductCount(array $branchIds, int $threshold): int
+    {
+        if (empty($branchIds)) {
+            return 0;
+        }
+
+        $latestSnapshots = BranchInventorySnapshot::query()
+            ->select('product_id', 'branch_id', DB::raw('MAX(inventory_date) as latest_date'))
+            ->whereIn('branch_id', $branchIds)
+            ->groupBy('product_id', 'branch_id');
+
+        return (int) BranchInventorySnapshot::query()
+            ->joinSub($latestSnapshots, 'latest_snapshots', function ($join) {
+                $join
+                    ->on('branch_inventory_snapshots.product_id', '=', 'latest_snapshots.product_id')
+                    ->on('branch_inventory_snapshots.branch_id', '=', 'latest_snapshots.branch_id')
+                    ->on('branch_inventory_snapshots.inventory_date', '=', 'latest_snapshots.latest_date');
+            })
+            ->groupBy('branch_inventory_snapshots.product_id')
+            ->havingRaw('SUM(branch_inventory_snapshots.closing_units) <= ?', [$threshold])
+            ->get()
+            ->count();
     }
 }

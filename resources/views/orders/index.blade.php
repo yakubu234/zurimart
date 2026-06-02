@@ -18,6 +18,7 @@
                     <tr>
                         <th>Order</th>
                         <th>Customer</th>
+                        <th>Notes</th>
                         <th>Demand</th>
                         <th>Units</th>
                         <th>Branch</th>
@@ -37,6 +38,13 @@
                             <td>
                                 {{ $order->customer_name }}<br>
                                 <small class="text-muted">{{ ucwords(str_replace('_', ' ', $order->customer_type)) }}</small>
+                            </td>
+                            <td>
+                                @if (filled($order->notes))
+                                    <span>{{ \Illuminate\Support\Str::limit($order->notes, 90) }}</span>
+                                @else
+                                    <span class="text-muted">No note</span>
+                                @endif
                             </td>
                             <td>@include('partials.badge', ['value' => $order->demand_type])</td>
                             <td>{{ $order->total_units }}</td>

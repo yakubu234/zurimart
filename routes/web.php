@@ -23,8 +23,8 @@ Route::middleware('guest')->group(function () {
 Route::view('/', 'welcome')->name('home');
 Route::get('/admin', DashboardController::class)->middleware(['auth', 'can:view-dashboard'])->name('dashboard');
 Route::get('/orders', [OrderController::class, 'index'])->middleware(['auth', 'can:view-orders'])->name('orders.index');
-Route::get('/orders/create', [OrderController::class, 'create'])->middleware(['auth', 'can:view-orders'])->name('orders.create');
-Route::post('/orders', [OrderController::class, 'store'])->middleware(['auth', 'can:view-orders'])->name('orders.store');
+Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware(['auth', 'can:view-orders'])->name('orders.show');
 Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->middleware(['auth', 'can:view-orders'])->name('orders.edit');
 Route::put('/orders/{order}', [OrderController::class, 'update'])->middleware(['auth', 'can:view-orders'])->name('orders.update');

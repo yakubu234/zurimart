@@ -116,6 +116,13 @@
                         <strong>Demand Type:</strong> @include('partials.badge', ['value' => $order->demand_type])
                     </div>
 
+                    @if ($order->notes)
+                        <div class="alert alert-light mt-3 mb-0">
+                            <strong>Order Note:</strong><br>
+                            {{ $order->notes }}
+                        </div>
+                    @endif
+
                     @if ($order->rejection_reason)
                         <div class="alert alert-danger mt-3 mb-0">
                             <strong>Rejection Note:</strong> {{ $order->rejection_reason }}

@@ -496,6 +496,30 @@ textarea {
     text-align: center;
 }
 
+.quantity-input {
+    min-width: 88px;
+    text-align: center;
+    color: var(--ink) !important;
+    background: #ffffff;
+    -webkit-text-fill-color: var(--ink);
+    opacity: 1;
+    font-size: 16px;
+    appearance: textfield;
+}
+
+.quantity-input:focus,
+.quantity-input:hover,
+.quantity-input:active {
+    color: var(--ink) !important;
+    background: #ffffff;
+    -webkit-text-fill-color: var(--ink);
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+    margin: 0;
+}
+
 .notification-list,
 .branch-list,
 .mini-list {

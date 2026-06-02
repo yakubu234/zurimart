@@ -15,12 +15,12 @@
                     <div class="col-md-5">
                         <div class="form-group">
                             <label>Branch</label>
-                            <select name="branch_id" class="form-control" {{ auth()->user()?->isBranchRestricted() ? 'disabled' : '' }}>
+                            <select name="branch_id" class="form-control" {{ auth()->user()?->isInventoryRestricted() ? 'disabled' : '' }}>
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}" @selected($selectedBranch->id === $branch->id)>{{ $branch->name }}</option>
                                 @endforeach
                             </select>
-                            @if (auth()->user()?->isBranchRestricted())
+                            @if (auth()->user()?->isInventoryRestricted())
                                 <input type="hidden" name="branch_id" value="{{ $selectedBranch->id }}">
                             @endif
                         </div>
@@ -67,10 +67,10 @@
                             <tr>
                                 <td>{{ $row['product']->name }}</td>
                                 <td>{{ $row['product']->productCategory?->name ?? $row['product']->category }}</td>
-                                <td><input type="number" min="0" name="rows[{{ $row['product']->id }}][opening_units]" class="form-control" value="{{ old("rows.{$row['product']->id}.opening_units", $row['opening_units']) }}"></td>
-                                <td><input type="number" min="0" name="rows[{{ $row['product']->id }}][produced_units]" class="form-control" value="{{ old("rows.{$row['product']->id}.produced_units", $row['produced_units']) }}"></td>
-                                <td><input type="number" min="0" name="rows[{{ $row['product']->id }}][sold_units]" class="form-control" value="{{ old("rows.{$row['product']->id}.sold_units", $row['sold_units']) }}"></td>
-                                <td><input type="number" name="rows[{{ $row['product']->id }}][adjustment_units]" class="form-control" value="{{ old("rows.{$row['product']->id}.adjustment_units", $row['adjustment_units']) }}"></td>
+                                <td><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][opening_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.opening_units", $row['opening_units']) }}"></td>
+                                <td><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][produced_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.produced_units", $row['produced_units']) }}"></td>
+                                <td><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][sold_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.sold_units", $row['sold_units']) }}"></td>
+                                <td><input type="number" inputmode="numeric" name="rows[{{ $row['product']->id }}][adjustment_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.adjustment_units", $row['adjustment_units']) }}"></td>
                                 <td><span class="badge badge-info">{{ $row['closing_units'] }} units</span></td>
                             </tr>
                         @endforeach

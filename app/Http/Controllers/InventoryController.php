@@ -17,16 +17,19 @@ class InventoryController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+
+        abort_unless($user?->canManageAllInventory() || ! is_null($user?->branch_id), 403, 'Assign this user to a branch or grant Manage All Inventory access.');
+
         $branches = Branch::query()
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id))
+            ->when($user?->isInventoryRestricted(), fn ($query) => $query->whereKey($user->branch_id))
             ->orderBy('name')
             ->get();
 
-        $selectedBranchId = $user?->isBranchRestricted()
+        $selectedBranchId = $user?->isInventoryRestricted()
             ? $user->branch_id
             : (int) ($request->integer('branch_id') ?: $branches->first()?->id);
 
-        abort_unless($selectedBranchId && (! $user?->isBranchRestricted() || $user->canAccessBranch($selectedBranchId)), 403);
+        abort_unless($selectedBranchId && $user?->canAccessInventoryBranch($selectedBranchId), 403);
 
         $selectedBranch = $branches->firstWhere('id', $selectedBranchId) ?? Branch::query()->findOrFail($selectedBranchId);
         $inventoryDate = $request->input('inventory_date', now()->toDateString());
@@ -47,7 +50,7 @@ class InventoryController extends Controller
             'rows.*.adjustment_units' => ['nullable', 'integer', 'min:-1000000'],
         ]);
 
-        abort_unless(! $request->user()?->isBranchRestricted() || $request->user()?->canAccessBranch((int) $data['branch_id']), 403);
+        abort_unless($request->user()?->canAccessInventoryBranch((int) $data['branch_id']), 403);
 
         $branch = Branch::query()->findOrFail($data['branch_id']);
         $this->inventory->syncDailyInventory($branch, $data['inventory_date'], $data['rows']);

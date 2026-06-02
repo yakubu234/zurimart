@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\NotificationEvents;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -96,8 +97,11 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'The last super admin cannot be deleted.']);
         }
 
-        $user->permissions()->detach();
-        $user->delete();
+        DB::transaction(function () use ($user): void {
+            $user->createdOrders()->update(['created_by' => null]);
+            $user->permissions()->detach();
+            $user->delete();
+        });
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
@@ -149,12 +153,14 @@ class UserController extends Controller
         $branchScopedPermissions = [
             'manage-branches',
             'manage-branch-master-data',
+            'manage-inventory',
             'manage-order-approvals',
             'view-bookings',
             'view-reports',
         ];
 
         return collect($permissionSlugs)->intersect($branchScopedPermissions)->isNotEmpty()
-            && ! in_array('manage-all-branches', $permissionSlugs, true);
+            && ! in_array('manage-all-branches', $permissionSlugs, true)
+            && ! in_array('manage-all-inventory', $permissionSlugs, true);
     }
 }

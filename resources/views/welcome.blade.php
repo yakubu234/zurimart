@@ -554,7 +554,51 @@
             border-radius: 28px;
             padding: 32px 38px;
             transform: translateY(-56px);
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+            gap: 28px;
+            align-items: stretch;
+        }
+
+        .footer-band-details {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 22px;
+            align-items: start;
+        }
+
+        .footer-band-item {
+            min-width: 0;
+        }
+
+        .footer-band-cta {
+            background: rgba(3, 19, 33, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 22px;
+            padding: 22px 24px;
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .footer-band-cta p {
+            margin: 0 0 16px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .footer-band-cta .btn {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 999px;
+            background: #fff;
+            color: #b94f00;
+            box-shadow: none;
+        }
+
+        .footer-band-cta .btn:hover {
+            background: #fff6e8;
         }
 
         .footer-band-item strong,
@@ -638,11 +682,18 @@
                 font-size: 1.5rem;
                 padding: 15px 20px;
             }
+
+            .footer-band {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-band-details {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 560px) {
             .topbar-inner,
-            .footer-band,
             .footer-grid { gap: 14px; }
 
             .hero h1 { font-size: 2.8rem; }
@@ -652,6 +703,10 @@
             .product-card,
             .offer-card,
             .gallery-card { width: 100%; }
+
+            .footer-band {
+                padding: 24px 20px;
+            }
         }
     </style>
 </head>
@@ -879,17 +934,24 @@
     <footer id="contact">
         <div class="container">
             <div class="footer-band">
-                <div class="footer-band-item">
-                    <strong>Address</strong>
-                    <span>Zurimart Bakery, Nigeria</span>
+                <div class="footer-band-details">
+                    <div class="footer-band-item">
+                        <strong>Address</strong>
+                        <span>Zurimart Bakery, Nigeria</span>
+                    </div>
+                    <div class="footer-band-item">
+                        <strong>Send Email</strong>
+                        <span>sales@zurimartbakery.com</span>
+                    </div>
+                    <div class="footer-band-item">
+                        <strong>Call / WhatsApp</strong>
+                        <span>Available on request for retail and bulk orders</span>
+                    </div>
                 </div>
-                <div class="footer-band-item">
-                    <strong>Send Email</strong>
-                    <span>sales@zurimartbakery.com</span>
-                </div>
-                <div class="footer-band-item">
-                    <strong>Call / WhatsApp</strong>
-                    <span>Available on request for retail and bulk orders</span>
+                <div class="footer-band-item footer-band-cta">
+                    <strong>Order Online</strong>
+                    <p>Need bread for home, retail shelves, or bulk supply? Open the public order page and submit your request now.</p>
+                    <a class="btn" href="{{ route('orders.create') }}">Go to Public Order Form</a>
                 </div>
             </div>
 
@@ -920,7 +982,7 @@
                 <div class="footer-col">
                     <h3>Contact Us</h3>
                     <p>Monday - Saturday: 8am - 6pm</p>
-                    <p>For household, retail, and wholesale enquiries, use the contact details above.</p>
+                    <p>For household, retail, and wholesale enquiries, use the contact details above or the order button in this section.</p>
                 </div>
             </div>
         </div>
