@@ -164,7 +164,8 @@ class DashboardController extends Controller
             ->whereIn('branch_id', $branchIds)
             ->groupBy('product_id', 'branch_id');
 
-        return (int) BranchInventorySnapshot::query()
+        $lowStockProducts = BranchInventorySnapshot::query()
+            ->select('branch_inventory_snapshots.product_id')
             ->joinSub($latestSnapshots, 'latest_snapshots', function ($join) {
                 $join
                     ->on('branch_inventory_snapshots.product_id', '=', 'latest_snapshots.product_id')
@@ -172,8 +173,10 @@ class DashboardController extends Controller
                     ->on('branch_inventory_snapshots.inventory_date', '=', 'latest_snapshots.latest_date');
             })
             ->groupBy('branch_inventory_snapshots.product_id')
-            ->havingRaw('SUM(branch_inventory_snapshots.closing_units) <= ?', [$threshold])
-            ->get()
+            ->havingRaw('SUM(branch_inventory_snapshots.closing_units) <= ?', [$threshold]);
+
+        return (int) DB::query()
+            ->fromSub($lowStockProducts->toBase(), 'low_stock_products')
             ->count();
     }
 }
