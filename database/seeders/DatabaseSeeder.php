@@ -347,6 +347,22 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'group' => 'orders',
+                'key' => 'orders.retail_minimum_units',
+                'value' => '1',
+                'is_encrypted' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'group' => 'orders',
+                'key' => 'orders.wholesale_minimum_units',
+                'value' => '50',
+                'is_encrypted' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'group' => 'notifications',
                 'key' => 'notifications.event_order_placed',
                 'value' => '1',

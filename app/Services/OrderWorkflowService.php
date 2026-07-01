@@ -296,7 +296,22 @@ class OrderWorkflowService
             ]);
         }
 
-        $pricingTier = $totalUnits >= 50 ? 'wholesale' : 'retail';
+        $retailMinimumUnits = max(
+            1,
+            (int) app(AppSettingsService::class)->get('orders.retail_minimum_units', 1)
+        );
+        $wholesaleMinimumUnits = max(
+            $retailMinimumUnits,
+            (int) app(AppSettingsService::class)->get('orders.wholesale_minimum_units', 50)
+        );
+
+        if ($totalUnits < $retailMinimumUnits) {
+            throw ValidationException::withMessages([
+                'items' => "A retail order must contain at least {$retailMinimumUnits} units.",
+            ]);
+        }
+
+        $pricingTier = $totalUnits >= $wholesaleMinimumUnits ? 'wholesale' : 'retail';
         $subtotal = $pricingTier === 'wholesale' ? $wholesaleSubtotal : $retailSubtotal;
 
         return [

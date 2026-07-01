@@ -384,7 +384,7 @@ return [
             'can' => 'manage-permissions',
         ],
         [
-            'text' => 'Integration Settings',
+            'text' => 'System Settings',
             'route' => 'settings.edit',
             'icon' => 'fas fa-fw fa-cogs',
             'can' => 'manage-integration-settings',

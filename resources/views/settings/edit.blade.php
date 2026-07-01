@@ -1,13 +1,44 @@
 @extends('layouts.app')
 
-@section('title', 'Integration Settings')
-@section('page_title', 'Notification and Integration Settings')
-@section('page_intro', 'Super Admin can configure SMTP and WhatsApp credentials here without exposing secrets in the interface or hard-coding them in templates.')
+@section('title', 'System Settings')
+@section('page_title', 'System Settings')
+@section('page_intro', 'Super Admin can configure order limits, notifications, SMTP, and WhatsApp without hard-coding operational rules.')
 
 @section('page')
     <form action="{{ route('settings.update') }}" method="POST">
         @csrf
         @method('PUT')
+        <div class="card card-outline card-warning">
+            <div class="card-header">
+                <h3 class="card-title">Order Quantity and Pricing Rules</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="retail_minimum_units">Minimum Retail Order (units)</label>
+                            <input type="number" id="retail_minimum_units" name="retail_minimum_units" class="form-control @error('retail_minimum_units') is-invalid @enderror"
+                                value="{{ old('retail_minimum_units', $orderSettings['orders.retail_minimum_units'] ?? 1) }}" min="1" required>
+                            @error('retail_minimum_units')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                            <small class="form-text text-muted">Orders below this total quantity cannot be submitted.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="wholesale_minimum_units">Minimum Wholesale Order (units)</label>
+                            <input type="number" id="wholesale_minimum_units" name="wholesale_minimum_units" class="form-control @error('wholesale_minimum_units') is-invalid @enderror"
+                                value="{{ old('wholesale_minimum_units', $orderSettings['orders.wholesale_minimum_units'] ?? 50) }}" min="1" required>
+                            @error('wholesale_minimum_units')
+                                <span class="invalid-feedback">{{ $message }}</span>
+                            @enderror
+                            <small class="form-text text-muted">This quantity and above receives wholesale pricing; lower qualifying orders receive retail pricing.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="row">
             <div class="col-lg-6">
                 <div class="card card-outline card-primary">
@@ -193,7 +224,7 @@
 
         <div class="card">
             <div class="card-footer">
-                <button type="submit" class="btn btn-warning">Save Integration Settings</button>
+                <button type="submit" class="btn btn-warning">Save System Settings</button>
             </div>
         </div>
     </form>

@@ -2,7 +2,7 @@
 
 @section('title', $order->exists ? 'Edit Order' : 'Create Order')
 @section('page_title', $order->exists ? 'Edit Bakery Order' : 'Create and Tag a Bakery Order')
-@section('page_intro', $order->exists ? 'Update customer details, branch assignment, production date, and item quantities before the order is completed.' : 'Capture customer type, demand type, scheduled production date, and product quantities. Wholesale pricing is triggered automatically from 50 units upward.')
+@section('page_intro', $order->exists ? 'Update customer details, branch assignment, production date, and item quantities before the order is completed.' : "Capture customer type, demand type, scheduled production date, and product quantities. Retail orders require at least {$retailMinimumUnits} units; wholesale pricing starts at {$wholesaleMinimumUnits} units.")
 
 @section('page')
     @php

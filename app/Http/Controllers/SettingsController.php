@@ -17,9 +17,10 @@ class SettingsController extends Controller
     public function edit(): View
     {
         $notificationSettings = $this->settings->group('notifications');
+        $orderSettings = $this->settings->group('orders');
         $recentNotifications = SystemNotification::query()->latest()->take(10)->get();
 
-        return view('settings.edit', compact('notificationSettings', 'recentNotifications'));
+        return view('settings.edit', compact('notificationSettings', 'orderSettings', 'recentNotifications'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -41,6 +42,8 @@ class SettingsController extends Controller
             'whatsapp_from_number' => ['nullable', 'string', 'max:255'],
             'admin_whatsapp_recipient' => ['nullable', 'string', 'max:255'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
+            'retail_minimum_units' => ['required', 'integer', 'min:1'],
+            'wholesale_minimum_units' => ['required', 'integer', 'gte:retail_minimum_units'],
             'event_order_placed' => ['nullable', 'boolean'],
             'event_order_accepted' => ['nullable', 'boolean'],
             'event_order_rejected' => ['nullable', 'boolean'],
@@ -86,6 +89,11 @@ class SettingsController extends Controller
             'notifications.whatsapp_token',
         ]);
 
-        return back()->with('success', 'Notification settings updated successfully.');
+        $this->settings->setMany('orders', [
+            'orders.retail_minimum_units' => $data['retail_minimum_units'],
+            'orders.wholesale_minimum_units' => $data['wholesale_minimum_units'],
+        ]);
+
+        return back()->with('success', 'System settings updated successfully.');
     }
 }

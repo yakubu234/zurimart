@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\AppSettingsService;
 use App\Services\OrderWorkflowService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -15,8 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
-    public function __construct(private readonly OrderWorkflowService $workflow)
-    {
+    public function __construct(
+        private readonly OrderWorkflowService $workflow,
+        private readonly AppSettingsService $settings
+    ) {
     }
 
     public function index(): View
@@ -41,8 +44,10 @@ class OrderController extends Controller
             ->orderBy('name')
             ->get();
         $order = new Order();
+        $retailMinimumUnits = max(1, (int) $this->settings->get('orders.retail_minimum_units', 1));
+        $wholesaleMinimumUnits = max($retailMinimumUnits, (int) $this->settings->get('orders.wholesale_minimum_units', 50));
 
-        return view('orders.create', compact('products', 'branches', 'order'));
+        return view('orders.create', compact('products', 'branches', 'order', 'retailMinimumUnits', 'wholesaleMinimumUnits'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -112,8 +117,10 @@ class OrderController extends Controller
             )
             ->orderBy('name')
             ->get();
+        $retailMinimumUnits = max(1, (int) $this->settings->get('orders.retail_minimum_units', 1));
+        $wholesaleMinimumUnits = max($retailMinimumUnits, (int) $this->settings->get('orders.wholesale_minimum_units', 50));
 
-        return view('orders.create', compact('products', 'branches', 'order'));
+        return view('orders.create', compact('products', 'branches', 'order', 'retailMinimumUnits', 'wholesaleMinimumUnits'));
     }
 
     public function update(Request $request, Order $order): RedirectResponse

@@ -19,7 +19,7 @@ return [
         ['slug' => 'manage-users', 'name' => 'Manage Users', 'group' => 'administration', 'description' => 'Create, update, suspend, and delete users.'],
         ['slug' => 'manage-roles', 'name' => 'Manage Roles', 'group' => 'administration', 'description' => 'Create and manage role definitions.'],
         ['slug' => 'manage-permissions', 'name' => 'Manage Permissions', 'group' => 'administration', 'description' => 'Create and manage permission definitions.'],
-        ['slug' => 'manage-integration-settings', 'name' => 'Manage Integration Settings', 'group' => 'administration', 'description' => 'Update notification and integration settings.'],
+        ['slug' => 'manage-integration-settings', 'name' => 'Manage System Settings', 'group' => 'administration', 'description' => 'Update order limits, notifications, and integration settings.'],
     ],
 
     'roles' => [
