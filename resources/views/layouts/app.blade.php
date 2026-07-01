@@ -36,6 +36,19 @@
         .action-text-btn {
             min-width: 2.5rem;
         }
+
+        .daily-report-table .quantity-column {
+            width: 132px;
+            min-width: 132px;
+        }
+
+        .daily-report-table .quantity-input {
+            width: 108px;
+            min-width: 108px;
+            max-width: 108px;
+            box-sizing: border-box;
+            text-align: center;
+        }
     </style>
 @stop
 

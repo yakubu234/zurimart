@@ -50,15 +50,15 @@
                 <h3 class="card-title">{{ $selectedBranch->name }} Daily Report for {{ \Carbon\Carbon::parse($reportDate)->format('d M Y') }}</h3>
             </div>
             <div class="card-body table-responsive p-0">
-                <table class="table table-striped table-hover text-nowrap">
+                <table class="table table-striped table-hover text-nowrap daily-report-table">
                     <thead>
                         <tr>
                             <th>Product</th>
                             <th>Category</th>
-                            <th>Opening</th>
-                            <th>Produced</th>
-                            <th>Sold</th>
-                            <th>Adjustment</th>
+                            <th class="quantity-column">Opening</th>
+                            <th class="quantity-column">Produced</th>
+                            <th class="quantity-column">Sold</th>
+                            <th class="quantity-column">Adjustment</th>
                             <th>Closing</th>
                         </tr>
                     </thead>
@@ -67,10 +67,10 @@
                             <tr>
                                 <td>{{ $row['product']->name }}</td>
                                 <td>{{ $row['product']->productCategory?->name ?? $row['product']->category }}</td>
-                                <td><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][opening_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.opening_units", $row['opening_units']) }}"></td>
-                                <td><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][produced_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.produced_units", $row['produced_units']) }}"></td>
-                                <td><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][sold_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.sold_units", $row['sold_units']) }}"></td>
-                                <td><input type="number" inputmode="numeric" name="rows[{{ $row['product']->id }}][adjustment_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.adjustment_units", $row['adjustment_units']) }}"></td>
+                                <td class="quantity-column"><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][opening_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.opening_units", $row['opening_units']) }}"></td>
+                                <td class="quantity-column"><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][produced_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.produced_units", $row['produced_units']) }}"></td>
+                                <td class="quantity-column"><input type="number" min="0" inputmode="numeric" name="rows[{{ $row['product']->id }}][sold_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.sold_units", $row['sold_units']) }}"></td>
+                                <td class="quantity-column"><input type="number" inputmode="numeric" name="rows[{{ $row['product']->id }}][adjustment_units]" class="form-control quantity-input" value="{{ old("rows.{$row['product']->id}.adjustment_units", $row['adjustment_units']) }}"></td>
                                 <td><span class="badge badge-info">{{ $row['closing_units'] }} units</span></td>
                             </tr>
                         @endforeach
