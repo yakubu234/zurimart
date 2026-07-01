@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditTrailService;
 use App\Support\NotificationEvents;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly AuditTrailService $auditTrail)
+    {
+    }
+
     public function index(): View
     {
         $users = User::query()
@@ -49,6 +54,13 @@ class UserController extends Controller
         ]);
 
         $user->permissions()->sync($data['permission_ids'] ?? []);
+        $permissions = $user->permissions()->orderBy('slug')->pluck('slug')->all();
+        $this->auditTrail->recordChange(
+            $user,
+            "Assigned direct permissions to user: {$user->name}",
+            ['permissions' => []],
+            ['permissions' => $permissions]
+        );
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -64,6 +76,7 @@ class UserController extends Controller
     {
         $data = $this->validatedData($request, $user);
         $role = Role::query()->findOrFail($data['role_id']);
+        $oldPermissions = $user->permissions()->orderBy('slug')->pluck('slug')->all();
 
         $payload = [
             'name' => $data['name'],
@@ -83,6 +96,13 @@ class UserController extends Controller
 
         $user->update($payload);
         $user->permissions()->sync($data['permission_ids'] ?? []);
+        $newPermissions = $user->permissions()->orderBy('slug')->pluck('slug')->all();
+        $this->auditTrail->recordChange(
+            $user,
+            "Changed direct permissions for user: {$user->name}",
+            ['permissions' => $oldPermissions],
+            ['permissions' => $newPermissions]
+        );
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
@@ -98,6 +118,13 @@ class UserController extends Controller
         }
 
         DB::transaction(function () use ($user): void {
+            $oldPermissions = $user->permissions()->orderBy('slug')->pluck('slug')->all();
+            $this->auditTrail->recordChange(
+                $user,
+                "Removed direct permissions before deleting user: {$user->name}",
+                ['permissions' => $oldPermissions],
+                ['permissions' => []]
+            );
             $user->createdOrders()->update(['created_by' => null]);
             $user->permissions()->detach();
             $user->delete();

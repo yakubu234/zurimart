@@ -396,6 +396,12 @@ return [
             'can' => 'manage-integration-settings',
         ],
         [
+            'text' => 'Audit Trail',
+            'route' => 'audit-logs.index',
+            'icon' => 'fas fa-fw fa-history',
+            'can' => 'view-audit-trail',
+        ],
+        [
             'text' => 'Website',
             'url' => 'https://zurimartbakeryservices.com',
             'icon' => 'fas fa-fw fa-globe',

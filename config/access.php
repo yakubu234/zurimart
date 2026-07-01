@@ -22,6 +22,7 @@ return [
         ['slug' => 'manage-roles', 'name' => 'Manage Roles', 'group' => 'administration', 'description' => 'Create and manage role definitions.'],
         ['slug' => 'manage-permissions', 'name' => 'Manage Permissions', 'group' => 'administration', 'description' => 'Create and manage permission definitions.'],
         ['slug' => 'manage-integration-settings', 'name' => 'Manage System Settings', 'group' => 'administration', 'description' => 'Update order limits, notifications, and integration settings.'],
+        ['slug' => 'view-audit-trail', 'name' => 'View Audit Trail', 'group' => 'administration', 'description' => 'View the system-wide history of created, updated, and deleted records.'],
     ],
 
     'roles' => [
@@ -50,6 +51,7 @@ return [
                 'manage-roles',
                 'manage-permissions',
                 'manage-integration-settings',
+                'view-audit-trail',
             ],
         ],
         [

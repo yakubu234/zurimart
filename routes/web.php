@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ProductCategoryController;
@@ -66,4 +67,5 @@ Route::middleware('auth')->group(function () {
     Route::resource('permissions', PermissionController::class)->except('show')->middleware('can:manage-permissions');
     Route::get('/settings', [SettingsController::class, 'edit'])->middleware('can:manage-integration-settings')->name('settings.edit');
     Route::put('/settings', [SettingsController::class, 'update'])->middleware('can:manage-integration-settings')->name('settings.update');
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->middleware('can:view-audit-trail')->name('audit-logs.index');
 });

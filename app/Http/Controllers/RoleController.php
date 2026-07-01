@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\AuditTrailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,10 @@ use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
+    public function __construct(private readonly AuditTrailService $auditTrail)
+    {
+    }
+
     public function index(): View
     {
         $roles = Role::query()->withCount(['users', 'permissions'])->orderBy('name')->get();
@@ -36,6 +41,13 @@ class RoleController extends Controller
         ]);
 
         $role->permissions()->sync($data['permission_ids'] ?? []);
+        $permissions = $role->permissions()->orderBy('slug')->pluck('slug')->all();
+        $this->auditTrail->recordChange(
+            $role,
+            "Assigned permissions to role: {$role->name}",
+            ['permissions' => []],
+            ['permissions' => $permissions]
+        );
 
         return redirect()->route('roles.index')->with('success', 'Role created successfully.');
     }
@@ -50,6 +62,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role): RedirectResponse
     {
         $data = $this->validatedData($request, $role);
+        $oldPermissions = $role->permissions()->orderBy('slug')->pluck('slug')->all();
 
         $role->update([
             'slug' => $role->is_system ? $role->slug : $data['slug'],
@@ -58,6 +71,13 @@ class RoleController extends Controller
         ]);
 
         $role->permissions()->sync($data['permission_ids'] ?? []);
+        $newPermissions = $role->permissions()->orderBy('slug')->pluck('slug')->all();
+        $this->auditTrail->recordChange(
+            $role,
+            "Changed permissions for role: {$role->name}",
+            ['permissions' => $oldPermissions],
+            ['permissions' => $newPermissions]
+        );
 
         return redirect()->route('roles.index')->with('success', 'Role updated successfully.');
     }
@@ -72,6 +92,13 @@ class RoleController extends Controller
             return back()->withErrors(['role' => 'This role is currently assigned to one or more users.']);
         }
 
+        $oldPermissions = $role->permissions()->orderBy('slug')->pluck('slug')->all();
+        $this->auditTrail->recordChange(
+            $role,
+            "Removed permissions before deleting role: {$role->name}",
+            ['permissions' => $oldPermissions],
+            ['permissions' => []]
+        );
         $role->permissions()->detach();
         $role->delete();
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Permission;
+use App\Services\AuditTrailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,10 @@ use Illuminate\Validation\Rule;
 
 class PermissionController extends Controller
 {
+    public function __construct(private readonly AuditTrailService $auditTrail)
+    {
+    }
+
     public function index(): View
     {
         $permissions = Permission::query()->withCount(['roles', 'users'])->orderBy('group')->orderBy('name')->get();
@@ -63,6 +68,14 @@ class PermissionController extends Controller
             return back()->withErrors(['permission' => 'System permissions cannot be deleted.']);
         }
 
+        $roleSlugs = $permission->roles()->orderBy('slug')->pluck('slug')->all();
+        $userEmails = $permission->users()->orderBy('email')->pluck('email')->all();
+        $this->auditTrail->recordChange(
+            $permission,
+            "Removed assignments before deleting permission: {$permission->name}",
+            ['roles' => $roleSlugs, 'users' => $userEmails],
+            ['roles' => [], 'users' => []]
+        );
         $permission->roles()->detach();
         $permission->users()->detach();
         $permission->delete();
