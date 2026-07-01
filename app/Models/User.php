@@ -110,6 +110,30 @@ class User extends Authenticatable
         return ! $this->canManageAllBranches() && ! is_null($this->branch_id);
     }
 
+    public function canManageAllDailyReports(): bool
+    {
+        return $this->canManageAllBranches()
+            || $this->hasPermission('manage-all-daily-reports');
+    }
+
+    public function isDailyReportRestricted(): bool
+    {
+        return ! $this->canManageAllDailyReports() && ! is_null($this->branch_id);
+    }
+
+    public function canAccessDailyReportBranch(?int $branchId): bool
+    {
+        if ($this->canManageAllDailyReports()) {
+            return true;
+        }
+
+        if (is_null($this->branch_id) || is_null($branchId)) {
+            return false;
+        }
+
+        return (int) $this->branch_id === (int) $branchId;
+    }
+
     public function canManageAllInventory(): bool
     {
         return $this->canManageAllBranches()

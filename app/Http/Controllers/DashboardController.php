@@ -23,7 +23,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $inventoryBranchIds = Branch::query()
             ->when(
-                $user?->canManageAllInventory(),
+                $user?->canManageAllDailyReports(),
                 fn ($query) => $query,
                 fn ($query) => $query->when($user?->branch_id, fn ($branchQuery) => $branchQuery->whereKey($user->branch_id))
             )

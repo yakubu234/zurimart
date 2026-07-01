@@ -347,6 +347,12 @@ return [
             'can' => 'manage-products',
         ],
         [
+            'text' => 'Daily Report',
+            'route' => 'daily-reports.index',
+            'icon' => 'fas fa-fw fa-clipboard-list',
+            'can' => 'manage-daily-reports',
+        ],
+        [
             'text' => 'Inventory',
             'route' => 'inventory.index',
             'icon' => 'fas fa-fw fa-boxes',

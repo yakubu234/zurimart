@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\RawMaterial;
 use App\Models\SystemNotification;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
@@ -74,6 +75,49 @@ class NotificationDispatchService
             'stock_units' => $product->stock_units,
             'threshold' => $threshold,
         ]);
+    }
+
+    public function notifyRawMaterialLowStock(RawMaterial $material, Branch $branch, float $balance): void
+    {
+        $quantity = rtrim(rtrim(number_format($balance, 3, '.', ''), '0'), '.');
+        $threshold = rtrim(rtrim(number_format((float) $material->low_stock_threshold, 3, '.', ''), '0'), '.');
+        $title = 'Raw material low-stock alert';
+        $message = "{$material->name} at {$branch->name} is now {$quantity} {$material->unit}, at or below its {$threshold} {$material->unit} threshold.";
+        $payload = [
+            'raw_material_id' => $material->id,
+            'raw_material_name' => $material->name,
+            'balance' => $balance,
+            'unit' => $material->unit,
+            'threshold' => (float) $material->low_stock_threshold,
+            'branch' => $branch->name,
+        ];
+        $sentRecipients = [];
+
+        if ($branch->notificationEnabled('raw_material_low_stock', 'email')) {
+            $this->send('email', $branch->email, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+        }
+
+        if ($branch->notificationEnabled('raw_material_low_stock', 'whatsapp')) {
+            $this->send('whatsapp', $branch->whatsapp_phone ?: $branch->phone, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+        }
+
+        $branchUsers = User::query()
+            ->where('status', 'active')
+            ->where('branch_id', $branch->id)
+            ->orderBy('name')
+            ->get();
+
+        foreach ($branchUsers as $user) {
+            if ($user->notificationEnabled('raw_material_low_stock', 'email')) {
+                $this->send('email', $user->email, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+            }
+
+            if ($user->notificationEnabled('raw_material_low_stock', 'whatsapp')) {
+                $this->send('whatsapp', $user->phone, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+            }
+        }
+
+        $this->notifyAdmins($title, $message, 'raw_material_low_stock', null, $branch, $payload);
     }
 
     public function notifyBranchOverbooked(Branch $branch, ?Order $order = null): void

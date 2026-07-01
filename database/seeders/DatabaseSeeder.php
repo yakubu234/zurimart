@@ -372,6 +372,14 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'group' => 'notifications',
+                'key' => 'notifications.event_raw_material_low_stock',
+                'value' => '1',
+                'is_encrypted' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'group' => 'notifications',
                 'key' => 'notifications.event_order_accepted',
                 'value' => '1',
                 'is_encrypted' => false,

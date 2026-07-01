@@ -57,7 +57,7 @@
         <div class="col-lg-7">
             <div class="card card-outline card-warning">
                 <div class="card-header">
-                    <h3 class="card-title">Branch Inventory Summary</h3>
+                    <h3 class="card-title">Branch Daily Report Summary</h3>
                 </div>
                 <div class="card-body table-responsive p-0">
                     <table class="table table-striped table-hover text-nowrap">

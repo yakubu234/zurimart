@@ -177,6 +177,12 @@
                                         @checked(old('event_low_stock', filter_var($notificationSettings['notifications.event_low_stock'] ?? true, FILTER_VALIDATE_BOOL)))>
                                     <label class="form-check-label" for="event_low_stock">When stock becomes low</label>
                                 </div>
+                                <div class="form-check mb-3">
+                                    <input type="hidden" name="event_raw_material_low_stock" value="0">
+                                    <input type="checkbox" name="event_raw_material_low_stock" value="1" class="form-check-input" id="event_raw_material_low_stock"
+                                        @checked(old('event_raw_material_low_stock', filter_var($notificationSettings['notifications.event_raw_material_low_stock'] ?? true, FILTER_VALIDATE_BOOL)))>
+                                    <label class="form-check-label" for="event_raw_material_low_stock">When raw material stock becomes low</label>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-check mb-3">

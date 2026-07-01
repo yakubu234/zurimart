@@ -40,6 +40,11 @@ class Branch extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function rawMaterialMovements(): HasMany
+    {
+        return $this->hasMany(RawMaterialMovement::class);
+    }
+
     public function notificationEnabled(string $eventKey, string $channel): bool
     {
         return (bool) data_get($this->notification_preferences ?? [], "{$eventKey}.{$channel}", true);

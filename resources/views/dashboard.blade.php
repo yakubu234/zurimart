@@ -158,9 +158,9 @@
 
             <div class="card card-outline card-info">
                 <div class="card-header">
-                    <h3 class="card-title">Branch Inventory Today</h3>
+                    <h3 class="card-title">Branch Daily Reports Today</h3>
                     <div class="card-tools">
-                        <a href="{{ route('inventory.index') }}" class="btn btn-sm btn-default">Open Inventory</a>
+                        <a href="{{ route('daily-reports.index') }}" class="btn btn-sm btn-default">Open Daily Reports</a>
                     </div>
                 </div>
                 <div class="card-body table-responsive p-0">

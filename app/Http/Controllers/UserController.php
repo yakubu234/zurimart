@@ -153,6 +153,7 @@ class UserController extends Controller
         $branchScopedPermissions = [
             'manage-branches',
             'manage-branch-master-data',
+            'manage-daily-reports',
             'manage-inventory',
             'manage-order-approvals',
             'view-bookings',
@@ -161,6 +162,7 @@ class UserController extends Controller
 
         return collect($permissionSlugs)->intersect($branchScopedPermissions)->isNotEmpty()
             && ! in_array('manage-all-branches', $permissionSlugs, true)
+            && ! in_array('manage-all-daily-reports', $permissionSlugs, true)
             && ! in_array('manage-all-inventory', $permissionSlugs, true);
     }
 }
