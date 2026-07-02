@@ -20,7 +20,7 @@ class InventoryController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user?->canManageAllInventory() || ! is_null($user?->branch_id), 403, 'Assign this user to a branch or grant Manage All Inventory access.');
+        abort_unless($user?->isAdministrator() || ! is_null($user?->branch_id), 403, 'Assign this user to a branch or use an Admin or Super Admin account.');
 
         $branches = Branch::query()
             ->when($user?->isInventoryRestricted(), fn ($query) => $query->whereKey($user->branch_id))

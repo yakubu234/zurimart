@@ -100,6 +100,11 @@ class User extends Authenticatable
         return in_array($this->roleKey(), $roles, true);
     }
 
+    public function isAdministrator(): bool
+    {
+        return $this->hasAnyRole(['admin', 'super_admin']);
+    }
+
     public function canManageAllBranches(): bool
     {
         return $this->hasRole('super_admin') || $this->hasPermission('manage-all-branches');
@@ -118,12 +123,12 @@ class User extends Authenticatable
 
     public function isDailyReportRestricted(): bool
     {
-        return ! $this->canManageAllDailyReports() && ! is_null($this->branch_id);
+        return ! $this->isAdministrator() && ! is_null($this->branch_id);
     }
 
     public function canAccessDailyReportBranch(?int $branchId): bool
     {
-        if ($this->canManageAllDailyReports()) {
+        if ($this->isAdministrator()) {
             return true;
         }
 
@@ -142,12 +147,12 @@ class User extends Authenticatable
 
     public function isInventoryRestricted(): bool
     {
-        return ! $this->canManageAllInventory() && ! is_null($this->branch_id);
+        return ! $this->isAdministrator() && ! is_null($this->branch_id);
     }
 
     public function canAccessInventoryBranch(?int $branchId): bool
     {
-        if ($this->canManageAllInventory()) {
+        if ($this->isAdministrator()) {
             return true;
         }
 

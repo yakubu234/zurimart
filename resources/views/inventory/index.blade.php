@@ -4,6 +4,30 @@
 @section('page_title', 'Raw Material Inventory')
 @section('page_intro', 'Track materials received and used by each branch, monitor current balances, and spot low stock early.')
 
+@push('css')
+    <style>
+        @media (max-width: 767.98px) {
+            .material-create-field {
+                margin-bottom: 0.75rem;
+            }
+
+            .raw-material-catalogue .material-code-column,
+            .raw-material-catalogue .material-unit-column {
+                min-width: 150px;
+            }
+
+            .raw-material-catalogue .material-name-column {
+                min-width: 230px;
+            }
+
+            .raw-material-catalogue .form-control {
+                width: 100%;
+                min-width: 100%;
+            }
+        }
+    </style>
+@endpush
+
 @section('page')
     @php
         $formatQuantity = fn ($value) => rtrim(rtrim(number_format((float) $value, 3, '.', ','), '0'), '.');
@@ -183,10 +207,10 @@
                 <form action="{{ route('inventory.materials.store') }}" method="POST" class="mb-4">
                     @csrf
                     <div class="row">
-                        <div class="col-md-2"><input type="text" name="code" class="form-control" placeholder="Code" required></div>
-                        <div class="col-md-3"><input type="text" name="name" class="form-control" placeholder="Material name" required></div>
-                        <div class="col-md-2"><input type="text" name="unit" class="form-control" placeholder="Unit (kg, bags)" required></div>
-                        <div class="col-md-3"><input type="number" name="low_stock_threshold" class="form-control" min="0" step="0.001" placeholder="Low-stock level" required></div>
+                        <div class="col-12 col-md-2 material-create-field"><input type="text" name="code" class="form-control" placeholder="Code" required></div>
+                        <div class="col-12 col-md-3 material-create-field"><input type="text" name="name" class="form-control" placeholder="Material name" required></div>
+                        <div class="col-12 col-md-2 material-create-field"><input type="text" name="unit" class="form-control" placeholder="Unit (kg, bags)" required></div>
+                        <div class="col-12 col-md-3 material-create-field"><input type="number" name="low_stock_threshold" class="form-control" min="0" step="0.001" placeholder="Low-stock level" required></div>
                         <div class="col-md-2">
                             <input type="hidden" name="is_active" value="1">
                             <button type="submit" class="btn btn-warning w-100">Add Material</button>
@@ -195,12 +219,12 @@
                 </form>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered text-nowrap mb-0">
+                    <table class="table table-bordered text-nowrap mb-0 raw-material-catalogue">
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Name</th>
-                                <th>Unit</th>
+                                <th class="material-code-column">Code</th>
+                                <th class="material-name-column">Name</th>
+                                <th class="material-unit-column">Unit</th>
                                 <th>Low-Stock Level</th>
                                 <th>Active</th>
                                 <th class="table-actions-col">Action</th>
@@ -209,9 +233,9 @@
                         <tbody>
                             @forelse ($materials as $material)
                                 <tr>
-                                    <td><input form="material-{{ $material->id }}" type="text" name="code" class="form-control" value="{{ $material->code }}" required></td>
-                                    <td><input form="material-{{ $material->id }}" type="text" name="name" class="form-control" value="{{ $material->name }}" required></td>
-                                    <td><input form="material-{{ $material->id }}" type="text" name="unit" class="form-control" value="{{ $material->unit }}" required></td>
+                                    <td class="material-code-column"><input form="material-{{ $material->id }}" type="text" name="code" class="form-control" value="{{ $material->code }}" required></td>
+                                    <td class="material-name-column"><input form="material-{{ $material->id }}" type="text" name="name" class="form-control" value="{{ $material->name }}" required></td>
+                                    <td class="material-unit-column"><input form="material-{{ $material->id }}" type="text" name="unit" class="form-control" value="{{ $material->unit }}" required></td>
                                     <td><input form="material-{{ $material->id }}" type="number" name="low_stock_threshold" class="form-control" value="{{ $material->low_stock_threshold }}" min="0" step="0.001" required></td>
                                     <td class="text-center">
                                         <input form="material-{{ $material->id }}" type="hidden" name="is_active" value="0">

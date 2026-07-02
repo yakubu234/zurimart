@@ -18,7 +18,7 @@ class DailyReportController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user?->canManageAllDailyReports() || ! is_null($user?->branch_id), 403, 'Assign this user to a branch or grant Manage All Daily Reports access.');
+        abort_unless($user?->isAdministrator() || ! is_null($user?->branch_id), 403, 'Assign this user to a branch or use an Admin or Super Admin account.');
 
         $branches = Branch::query()
             ->when($user?->isDailyReportRestricted(), fn ($query) => $query->whereKey($user->branch_id))

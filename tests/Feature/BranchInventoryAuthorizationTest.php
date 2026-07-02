@@ -13,6 +13,42 @@ class BranchInventoryAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_branch_user_only_sees_their_branch_in_inventory_and_daily_report_selectors(): void
+    {
+        [$ownBranch, $otherBranch] = $this->branches();
+        $user = $this->branchManager($ownBranch);
+
+        $this->actingAs($user)
+            ->get(route('inventory.index', ['branch_id' => $otherBranch->id], false))
+            ->assertOk()
+            ->assertSee($ownBranch->name)
+            ->assertDontSee($otherBranch->name)
+            ->assertSee('value="'.$ownBranch->id.'"', false);
+
+        $this->actingAs($user)
+            ->get(route('daily-reports.index', ['branch_id' => $otherBranch->id], false))
+            ->assertOk()
+            ->assertSee($ownBranch->name)
+            ->assertDontSee($otherBranch->name)
+            ->assertSee('value="'.$ownBranch->id.'"', false);
+    }
+
+    public function test_admin_and_super_admin_roles_are_not_branch_restricted(): void
+    {
+        $admin = User::factory()->make(['role_code' => 'admin', 'status' => 'active']);
+        $superAdmin = User::factory()->make(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->assertFalse($admin->isInventoryRestricted());
+        $this->assertFalse($admin->isDailyReportRestricted());
+        $this->assertTrue($admin->canAccessInventoryBranch(999));
+        $this->assertTrue($admin->canAccessDailyReportBranch(999));
+
+        $this->assertFalse($superAdmin->isInventoryRestricted());
+        $this->assertFalse($superAdmin->isDailyReportRestricted());
+        $this->assertTrue($superAdmin->canAccessInventoryBranch(999));
+        $this->assertTrue($superAdmin->canAccessDailyReportBranch(999));
+    }
+
     public function test_branch_user_cannot_record_inventory_for_another_branch(): void
     {
         [$ownBranch, $otherBranch] = $this->branches();
