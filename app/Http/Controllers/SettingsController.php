@@ -35,6 +35,9 @@ class SettingsController extends Controller
             'email_from_address' => ['nullable', 'email', 'max:255'],
             'email_from_name' => ['nullable', 'string', 'max:255'],
             'admin_email_recipient' => ['nullable', 'email', 'max:255'],
+            'manual_email_recipients' => ['nullable', 'array', 'max:100'],
+            'manual_email_recipients.*' => ['nullable', 'email', 'max:255'],
+            'branch_recipients_enabled' => ['nullable', 'boolean'],
             'whatsapp_enabled' => ['nullable', 'boolean'],
             'whatsapp_api_url' => ['nullable', 'url', 'max:500'],
             'whatsapp_token' => ['nullable', 'string', 'max:1000'],
@@ -57,6 +60,7 @@ class SettingsController extends Controller
 
         $currentEmailPassword = $this->settings->get('notifications.email_password');
         $currentWhatsAppToken = $this->settings->get('notifications.whatsapp_token');
+        $manualEmailRecipients = $this->normalizeEmailRecipients($data['manual_email_recipients'] ?? null);
 
         $normalized = [
             'notifications.email_enabled' => $request->boolean('email_enabled'),
@@ -68,6 +72,8 @@ class SettingsController extends Controller
             'notifications.email_from_address' => $data['email_from_address'] ?? null,
             'notifications.email_from_name' => $data['email_from_name'] ?? null,
             'notifications.admin_email_recipient' => $data['admin_email_recipient'] ?? null,
+            'notifications.manual_email_recipients' => implode("\n", $manualEmailRecipients),
+            'notifications.branch_recipients_enabled' => $request->boolean('branch_recipients_enabled'),
             'notifications.whatsapp_enabled' => $request->boolean('whatsapp_enabled'),
             'notifications.whatsapp_api_url' => $data['whatsapp_api_url'] ?? null,
             'notifications.whatsapp_token' => filled($data['whatsapp_token'] ?? null) ? $data['whatsapp_token'] : $currentWhatsAppToken,
@@ -97,5 +103,18 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('success', 'System settings updated successfully.');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function normalizeEmailRecipients(?array $value): array
+    {
+        return collect($value ?? [])
+            ->map(fn ($recipient) => strtolower(trim((string) $recipient)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

@@ -97,6 +97,45 @@
                             <label>Admin Alert Email Recipient</label>
                             <input type="email" name="admin_email_recipient" class="form-control" value="{{ old('admin_email_recipient', $notificationSettings['notifications.admin_email_recipient'] ?? '') }}" placeholder="Where low stock and admin alerts should go">
                         </div>
+                        <div class="form-group">
+                            <label>Manual Email Recipients</label>
+                            @php
+                                $storedManualRecipients = preg_split(
+                                    '/[\s,;]+/',
+                                    (string) ($notificationSettings['notifications.manual_email_recipients'] ?? ''),
+                                    -1,
+                                    PREG_SPLIT_NO_EMPTY
+                                ) ?: [];
+                                $manualRecipients = old('manual_email_recipients', $storedManualRecipients);
+                                $manualRecipients = is_array($manualRecipients) && count($manualRecipients)
+                                    ? $manualRecipients
+                                    : [''];
+                            @endphp
+                            <div id="manual-email-recipients">
+                                @foreach ($manualRecipients as $index => $recipient)
+                                    <div class="input-group mb-2 manual-email-row">
+                                        <input type="email" name="manual_email_recipients[]"
+                                            class="form-control @error("manual_email_recipients.{$index}") is-invalid @enderror"
+                                            value="{{ $recipient }}" placeholder="name@example.com">
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-outline-danger remove-manual-email" title="Remove email" aria-label="Remove email">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        @error("manual_email_recipients.{$index}")
+                                            <span class="invalid-feedback">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                @endforeach
+                            </div>
+                            <button type="button" id="add-manual-email" class="btn btn-sm btn-outline-primary mt-1">
+                                <i class="fas fa-plus mr-1"></i> Add another email
+                            </button>
+                            @error('manual_email_recipients')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                            <small class="form-text text-muted">These recipients receive every enabled notification event, even when branch delivery is paused.</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -149,6 +188,17 @@
                         <h3 class="card-title">Notification Event Rules</h3>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-light border mb-4">
+                            <div class="form-check">
+                                <input type="hidden" name="branch_recipients_enabled" value="0">
+                                <input type="checkbox" name="branch_recipients_enabled" value="1" class="form-check-input" id="branch_recipients_enabled"
+                                    @checked(old('branch_recipients_enabled', filter_var($notificationSettings['notifications.branch_recipients_enabled'] ?? true, FILTER_VALIDATE_BOOL)))>
+                                <label class="form-check-label font-weight-bold" for="branch_recipients_enabled">
+                                    Send notifications to branches and their assigned users
+                                </label>
+                            </div>
+                            <small class="form-text text-muted ml-4">Turn this off to pause both email and WhatsApp delivery to branch contacts and branch users. Admin recipients and the manual email list will continue receiving enabled events.</small>
+                        </div>
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-check mb-3">
@@ -269,3 +319,46 @@
         </div>
     </div>
 @endsection
+
+@push('js')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const recipients = document.getElementById('manual-email-recipients');
+            const addButton = document.getElementById('add-manual-email');
+
+            const addRecipientField = () => {
+                const row = document.createElement('div');
+                row.className = 'input-group mb-2 manual-email-row';
+                row.innerHTML = `
+                    <input type="email" name="manual_email_recipients[]" class="form-control" placeholder="name@example.com">
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-danger remove-manual-email" title="Remove email" aria-label="Remove email">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                recipients.appendChild(row);
+                row.querySelector('input').focus();
+            };
+
+            addButton.addEventListener('click', addRecipientField);
+
+            recipients.addEventListener('click', (event) => {
+                const removeButton = event.target.closest('.remove-manual-email');
+
+                if (! removeButton) {
+                    return;
+                }
+
+                const rows = recipients.querySelectorAll('.manual-email-row');
+
+                if (rows.length === 1) {
+                    rows[0].querySelector('input').value = '';
+                    return;
+                }
+
+                removeButton.closest('.manual-email-row').remove();
+            });
+        });
+    </script>
+@endpush

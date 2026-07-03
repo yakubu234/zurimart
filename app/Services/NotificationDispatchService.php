@@ -22,6 +22,10 @@ class NotificationDispatchService
 
     public function notifyBranch(Branch $branch, Order $order, string $title, string $message, string $eventKey): void
     {
+        if (! $this->branchRecipientsEnabled()) {
+            return;
+        }
+
         $payload = ['order_number' => $order->order_number, 'branch' => $branch->name];
         $sentRecipients = [];
 
@@ -56,6 +60,11 @@ class NotificationDispatchService
         }
 
         $this->send('email', $this->settings->get('notifications.admin_email_recipient'), $title, $message, $eventKey, $branch?->id, $order?->id, $payload, $sentRecipients);
+
+        foreach ($this->manualEmailRecipients() as $recipient) {
+            $this->send('email', $recipient, $title, $message, $eventKey, $branch?->id, $order?->id, $payload, $sentRecipients);
+        }
+
         $this->send('whatsapp', $this->settings->get('notifications.admin_whatsapp_recipient'), $title, $message, $eventKey, $branch?->id, $order?->id, $payload, $sentRecipients);
     }
 
@@ -93,27 +102,29 @@ class NotificationDispatchService
         ];
         $sentRecipients = [];
 
-        if ($branch->notificationEnabled('raw_material_low_stock', 'email')) {
-            $this->send('email', $branch->email, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
-        }
-
-        if ($branch->notificationEnabled('raw_material_low_stock', 'whatsapp')) {
-            $this->send('whatsapp', $branch->whatsapp_phone ?: $branch->phone, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
-        }
-
-        $branchUsers = User::query()
-            ->where('status', 'active')
-            ->where('branch_id', $branch->id)
-            ->orderBy('name')
-            ->get();
-
-        foreach ($branchUsers as $user) {
-            if ($user->notificationEnabled('raw_material_low_stock', 'email')) {
-                $this->send('email', $user->email, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+        if ($this->branchRecipientsEnabled()) {
+            if ($branch->notificationEnabled('raw_material_low_stock', 'email')) {
+                $this->send('email', $branch->email, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
             }
 
-            if ($user->notificationEnabled('raw_material_low_stock', 'whatsapp')) {
-                $this->send('whatsapp', $user->phone, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+            if ($branch->notificationEnabled('raw_material_low_stock', 'whatsapp')) {
+                $this->send('whatsapp', $branch->whatsapp_phone ?: $branch->phone, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+            }
+
+            $branchUsers = User::query()
+                ->where('status', 'active')
+                ->where('branch_id', $branch->id)
+                ->orderBy('name')
+                ->get();
+
+            foreach ($branchUsers as $user) {
+                if ($user->notificationEnabled('raw_material_low_stock', 'email')) {
+                    $this->send('email', $user->email, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+                }
+
+                if ($user->notificationEnabled('raw_material_low_stock', 'whatsapp')) {
+                    $this->send('whatsapp', $user->phone, $title, $message, 'raw_material_low_stock', $branch->id, null, $payload, $sentRecipients);
+                }
             }
         }
 
@@ -187,6 +198,27 @@ class NotificationDispatchService
             'whatsapp' => $this->settings->bool('notifications.whatsapp_enabled'),
             default => false,
         };
+    }
+
+    protected function branchRecipientsEnabled(): bool
+    {
+        return $this->settings->bool('notifications.branch_recipients_enabled', true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function manualEmailRecipients(): array
+    {
+        return collect(preg_split(
+            '/[\s,;]+/',
+            (string) $this->settings->get('notifications.manual_email_recipients', '')
+        ) ?: [])
+            ->map(fn (string $recipient) => strtolower(trim($recipient)))
+            ->filter(fn (string $recipient) => filter_var($recipient, FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     protected function dispatchEmail(SystemNotification $notification): void
