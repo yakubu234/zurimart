@@ -5,7 +5,7 @@
 @section('page_intro', 'Create or maintain the product types used across the bakery catalog.')
 
 @section('page')
-    <div class="card card-warning card-outline">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">{{ $category->exists ? 'Update Product Type' : 'Create Product Type' }}</h3>
         </div>

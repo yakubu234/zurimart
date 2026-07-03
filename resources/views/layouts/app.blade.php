@@ -1,5 +1,109 @@
 @extends('adminlte::page')
 
+@push('css')
+    <style>
+        .drag-scroll-enabled {
+            cursor: grab;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .drag-scroll-enabled.is-dragging {
+            cursor: grabbing;
+            user-select: none;
+        }
+    </style>
+@endpush
+
+@push('js')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const interactiveSelector = 'a, button, input, select, textarea, label, form, [role="button"]';
+
+            document.querySelectorAll('.table-responsive, .table-wrap').forEach((scroller) => {
+                let isDragging = false;
+                let hasMoved = false;
+                let suppressClick = false;
+                let startX = 0;
+                let startScrollLeft = 0;
+
+                const updateDragState = () => {
+                    scroller.classList.toggle('drag-scroll-enabled', scroller.scrollWidth > scroller.clientWidth);
+                };
+
+                updateDragState();
+
+                if ('ResizeObserver' in window) {
+                    new ResizeObserver(updateDragState).observe(scroller);
+                } else {
+                    window.addEventListener('resize', updateDragState);
+                }
+
+                scroller.addEventListener('pointerdown', (event) => {
+                    if (
+                        event.pointerType === 'touch'
+                        || event.button !== 0
+                        || event.target.closest(interactiveSelector)
+                        || scroller.scrollWidth <= scroller.clientWidth
+                    ) {
+                        return;
+                    }
+
+                    isDragging = true;
+                    hasMoved = false;
+                    startX = event.clientX;
+                    startScrollLeft = scroller.scrollLeft;
+                    scroller.classList.add('is-dragging');
+                    scroller.setPointerCapture(event.pointerId);
+                });
+
+                scroller.addEventListener('pointermove', (event) => {
+                    if (! isDragging) {
+                        return;
+                    }
+
+                    const distance = event.clientX - startX;
+
+                    if (Math.abs(distance) > 3) {
+                        hasMoved = true;
+                    }
+
+                    if (hasMoved) {
+                        event.preventDefault();
+                        scroller.scrollLeft = startScrollLeft - distance;
+                    }
+                });
+
+                const stopDragging = (event) => {
+                    if (! isDragging) {
+                        return;
+                    }
+
+                    isDragging = false;
+                    suppressClick = hasMoved;
+                    scroller.classList.remove('is-dragging');
+
+                    if (scroller.hasPointerCapture(event.pointerId)) {
+                        scroller.releasePointerCapture(event.pointerId);
+                    }
+
+                    setTimeout(() => {
+                        suppressClick = false;
+                    }, 0);
+                };
+
+                scroller.addEventListener('pointerup', stopDragging);
+                scroller.addEventListener('pointercancel', stopDragging);
+                scroller.addEventListener('click', (event) => {
+                    if (suppressClick) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                }, true);
+            });
+        });
+    </script>
+@endpush
+
 @section('title', trim($__env->yieldContent('title', 'ZuriMart Bakery')))
 
 @section('css')

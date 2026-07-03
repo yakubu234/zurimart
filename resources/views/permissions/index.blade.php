@@ -5,7 +5,7 @@
 @section('page_intro', 'Maintain the system capabilities that can be attached to roles or granted directly to users.')
 
 @section('page')
-    <div class="card">
+    <div class="card card-info">
         <div class="card-header">
             <h3 class="card-title">Permissions</h3>
             <div class="card-tools">

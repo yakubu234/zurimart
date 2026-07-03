@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Branch;
 use App\Models\BranchInventorySnapshot;
 use App\Models\BranchStockBatch;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -246,7 +247,13 @@ class BranchInventoryService
                 ->where('branch_inventory_snapshots.product_id', $product->id)
                 ->sum('branch_inventory_snapshots.closing_units');
 
-            $product->update(['stock_units' => (int) $total]);
+            $reserved = OrderItem::query()
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.status', 'accepted')
+                ->where('order_items.product_id', $product->id)
+                ->sum('order_items.quantity');
+
+            $product->update(['stock_units' => max(0, (int) $total - (int) $reserved)]);
         });
     }
 }

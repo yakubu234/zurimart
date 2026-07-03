@@ -5,7 +5,7 @@
 @section('page_intro', 'Define a capability slug, group it sensibly, and describe what it unlocks in the system.')
 
 @section('page')
-    <div class="card card-warning card-outline">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">{{ $permission->exists ? 'Update Permission Details' : 'Create a New Permission' }}</h3>
         </div>

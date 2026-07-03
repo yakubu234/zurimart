@@ -5,7 +5,7 @@
 @section('page_intro', 'Use this view to understand wholesale reservations and future production commitments before they become same-day branch pressure.')
 
 @section('page')
-    <div class="card">
+    <div class="card card-info">
         <div class="card-header">
             <h3 class="card-title">Reserved Production Slots</h3>
             <div class="card-tools">

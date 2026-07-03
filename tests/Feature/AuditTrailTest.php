@@ -134,4 +134,31 @@ class AuditTrailTest extends TestCase
             'auditable_id' => (string) $admin->id,
         ]);
     }
+
+    public function test_audit_page_has_adjustable_pagination(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        AuditLog::query()->delete();
+
+        foreach (range(1, 15) as $number) {
+            AuditLog::query()->create([
+                'user_id' => $admin->id,
+                'action' => 'updated',
+                'auditable_type' => User::class,
+                'auditable_id' => (string) $number,
+                'subject_label' => "User {$number}",
+                'description' => "Updated User {$number}",
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('audit-logs.index', ['per_page' => 10, 'page' => 2], false))
+            ->assertOk()
+            ->assertViewHas('logs', fn ($logs) => $logs->perPage() === 10
+                && $logs->currentPage() === 2
+                && $logs->count() === 5
+                && $logs->total() === 15)
+            ->assertSee('name="per_page"', false)
+            ->assertSee('Showing 11 to 15 of 15');
+    }
 }

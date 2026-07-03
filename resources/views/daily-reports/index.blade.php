@@ -5,7 +5,7 @@
 @section('page_intro', 'Record each branch product’s opening quantity, daily production, sales, adjustments, and closing quantity.')
 
 @section('page')
-    <div class="card card-outline card-warning">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">Daily Report Filters</h3>
         </div>
@@ -45,7 +45,7 @@
         <input type="hidden" name="branch_id" value="{{ $selectedBranch->id }}">
         <input type="hidden" name="report_date" value="{{ $reportDate }}">
 
-        <div class="card">
+        <div class="card card-success">
             <div class="card-header">
                 <h3 class="card-title">{{ $selectedBranch->name }} Daily Report for {{ \Carbon\Carbon::parse($reportDate)->format('d M Y') }}</h3>
             </div>

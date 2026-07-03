@@ -22,7 +22,7 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h3 class="card-title">ZuriMart Bakery Receipt</h3>
                     <div class="card-tools">
@@ -49,23 +49,24 @@
 
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <div class="info-box">
+                            <div class="info-box receipt-info-box">
                                 <span class="info-box-icon bg-info"><i class="fas fa-user"></i></span>
                                 <div class="info-box-content">
                                     <span class="info-box-text">Customer</span>
                                     <span class="info-box-number">{{ $order->customer_name }}</span>
-                                    <span>{{ $order->customer_email ?: 'No email provided' }}</span><br>
+                                    <span>{{ $order->customer_email ?: 'No email provided' }}</span>
                                     <span>{{ $order->customer_phone ?: 'No phone provided' }}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="info-box">
+                            <div class="info-box receipt-info-box">
                                 <span class="info-box-icon bg-warning"><i class="fas fa-industry"></i></span>
                                 <div class="info-box-content">
                                     <span class="info-box-text">Tagged Branch</span>
                                     <span class="info-box-number">{{ $order->branch?->name }}</span>
-                                    <span>{{ $order->branch?->phone }}</span><br>
+                                    <span>{{ $order->branch?->phone }}</span>
+                                    <span><strong>Created By:</strong> {{ $order->creator?->name ?? 'Unknown user' }}</span>
                                     <span>{{ $order->branch?->email }}</span>
                                 </div>
                             </div>
@@ -101,7 +102,7 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card card-outline card-warning">
+            <div class="card card-warning">
                 <div class="card-header"><h3 class="card-title">Order Summary</h3></div>
                 <div class="card-body">
                     <table class="table table-sm">
@@ -136,6 +137,11 @@
 
 @section('css')
     <style>
+        .receipt-info-box .info-box-content {
+            line-height: 1.3;
+            gap: 0.3rem;
+        }
+
         @media print {
             .main-sidebar, .main-header, .content-header, .btn, .main-footer { display: none !important; }
             .content-wrapper, .content, .card { margin: 0 !important; box-shadow: none !important; }

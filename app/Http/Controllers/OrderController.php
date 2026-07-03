@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\AppSettingsService;
+use App\Services\BranchProductStockService;
 use App\Services\OrderWorkflowService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +19,8 @@ class OrderController extends Controller
 {
     public function __construct(
         private readonly OrderWorkflowService $workflow,
-        private readonly AppSettingsService $settings
+        private readonly AppSettingsService $settings,
+        private readonly BranchProductStockService $branchStocks,
     ) {
     }
 
@@ -44,10 +46,14 @@ class OrderController extends Controller
             ->orderBy('name')
             ->get();
         $order = new Order();
+        $branchStocks = $this->branchStocks->stockMap(
+            $branches->pluck('id')->all(),
+            $products->pluck('id')->all()
+        );
         $retailMinimumUnits = max(1, (int) $this->settings->get('orders.retail_minimum_units', 1));
         $wholesaleMinimumUnits = max($retailMinimumUnits, (int) $this->settings->get('orders.wholesale_minimum_units', 50));
 
-        return view('orders.create', compact('products', 'branches', 'order', 'retailMinimumUnits', 'wholesaleMinimumUnits'));
+        return view('orders.create', compact('products', 'branches', 'branchStocks', 'order', 'retailMinimumUnits', 'wholesaleMinimumUnits'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -117,10 +123,15 @@ class OrderController extends Controller
             )
             ->orderBy('name')
             ->get();
+        $branchStocks = $this->branchStocks->stockMap(
+            $branches->pluck('id')->all(),
+            $products->pluck('id')->all(),
+            $order->status === 'accepted' ? $order->id : null
+        );
         $retailMinimumUnits = max(1, (int) $this->settings->get('orders.retail_minimum_units', 1));
         $wholesaleMinimumUnits = max($retailMinimumUnits, (int) $this->settings->get('orders.wholesale_minimum_units', 50));
 
-        return view('orders.create', compact('products', 'branches', 'order', 'retailMinimumUnits', 'wholesaleMinimumUnits'));
+        return view('orders.create', compact('products', 'branches', 'branchStocks', 'order', 'retailMinimumUnits', 'wholesaleMinimumUnits'));
     }
 
     public function update(Request $request, Order $order): RedirectResponse
@@ -159,14 +170,14 @@ class OrderController extends Controller
 
         return redirect()
             ->route('orders.show', $order)
-            ->with('success', "Order {$order->order_number} updated successfully.");
+            ->with('success', "Order {$order->order_number} was updated and returned to pending review.");
     }
 
     public function show(Order $order): View
     {
         abort_unless(! request()->user()?->isBranchRestricted() || request()->user()?->canAccessBranch($order->branch_id), 403);
 
-        $order->load(['branch', 'items']);
+        $order->load(['branch', 'items', 'creator']);
 
         return view('orders.show', compact('order'));
     }

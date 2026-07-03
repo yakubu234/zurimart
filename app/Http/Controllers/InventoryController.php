@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\RawMaterial;
+use App\Models\RawMaterialMovement;
 use App\Services\RawMaterialInventoryService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
@@ -35,17 +37,53 @@ class InventoryController extends Controller
 
         $selectedBranch = $branches->firstWhere('id', $selectedBranchId)
             ?? Branch::query()->findOrFail($selectedBranchId);
-        $stockRows = $this->inventory->stockRows($selectedBranch);
-        $recentMovements = $this->inventory->recentMovements($selectedBranch);
-        $materials = RawMaterial::query()->orderBy('name')->get();
+        $pageSizes = [10, 25, 50, 100];
+        $stockPerPage = in_array($request->integer('stock_per_page'), $pageSizes, true)
+            ? $request->integer('stock_per_page')
+            : 10;
+        $activityPerPage = in_array($request->integer('activity_per_page'), $pageSizes, true)
+            ? $request->integer('activity_per_page')
+            : 10;
+
+        $allStockRows = $this->inventory->stockRows($selectedBranch);
+        $stockPage = max(1, $request->integer('stock_page', 1));
+        $stockRows = new LengthAwarePaginator(
+            $allStockRows->forPage($stockPage, $stockPerPage)->values(),
+            $allStockRows->count(),
+            $stockPerPage,
+            $stockPage,
+            [
+                'path' => $request->url(),
+                'pageName' => 'stock_page',
+            ]
+        );
+        $stockRows->appends($request->except('stock_page'));
+
+        $recentMovements = $this->inventory
+            ->recentMovements($selectedBranch, $activityPerPage)
+            ->appends($request->except('activity_page'));
+        $movementMaterials = RawMaterial::query()->orderBy('name')->get();
 
         return view('inventory.index', compact(
             'branches',
             'selectedBranch',
+            'allStockRows',
             'stockRows',
             'recentMovements',
-            'materials'
+            'movementMaterials',
+            'pageSizes',
+            'stockPerPage',
+            'activityPerPage'
         ));
+    }
+
+    public function materials(Request $request): View
+    {
+        abort_unless($request->user()?->canManageAllInventory(), 403);
+
+        $materials = RawMaterial::query()->orderBy('name')->get();
+
+        return view('inventory.materials', compact('materials'));
     }
 
     public function storeMovement(Request $request): RedirectResponse
@@ -73,6 +111,35 @@ class InventoryController extends Controller
         return redirect()
             ->route('inventory.index', ['branch_id' => $branch->id])
             ->with('success', "{$material->name} was recorded as {$action} {$branch->name}.");
+    }
+
+    public function updateMovement(Request $request, RawMaterialMovement $rawMaterialMovement): RedirectResponse
+    {
+        abort_unless($request->user()?->hasPermission('edit-inventory-movements'), 403);
+        abort_unless($request->user()?->canAccessInventoryBranch($rawMaterialMovement->branch_id), 403);
+
+        $data = $request->validate([
+            'raw_material_id' => ['required', 'exists:raw_materials,id'],
+            'movement_type' => ['required', Rule::in(['received', 'used'])],
+            'quantity' => ['required', 'numeric', 'gt:0'],
+            'movement_date' => ['required', 'date', 'before_or_equal:today'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $movement = $this->inventory->updateMovement($rawMaterialMovement, $data);
+
+        return back()->with('success', "{$movement->rawMaterial->name} inventory activity was updated successfully.");
+    }
+
+    public function destroyMovement(Request $request, RawMaterialMovement $rawMaterialMovement): RedirectResponse
+    {
+        abort_unless($request->user()?->hasPermission('delete-inventory-movements'), 403);
+        abort_unless($request->user()?->canAccessInventoryBranch($rawMaterialMovement->branch_id), 403);
+
+        $materialName = $rawMaterialMovement->rawMaterial?->name ?? 'Raw material';
+        $this->inventory->deleteMovement($rawMaterialMovement);
+
+        return back()->with('success', "{$materialName} inventory activity was deleted successfully.");
     }
 
     public function storeMaterial(Request $request): RedirectResponse

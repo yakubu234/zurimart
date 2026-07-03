@@ -5,7 +5,7 @@
 @section('page_intro', 'Manage role identity and assign the permission bundle users will inherit from this role.')
 
 @section('page')
-    <div class="card card-warning card-outline">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">{{ $role->exists ? 'Update Role Details' : 'Create a New Role' }}</h3>
         </div>

@@ -4,8 +4,21 @@
 @section('page_title', 'Orders Management')
 @section('page_intro', 'Review smart branch-tagging, retail versus wholesale pricing, and manager approval actions in one AdminLTE table.')
 
+@push('css')
+    <style>
+        .order-notes-column {
+            width: 30ch;
+            min-width: 30ch;
+            max-width: 30ch;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+    </style>
+@endpush
+
 @section('page')
-    <div class="card">
+    <div class="card card-primary">
         <div class="card-header">
             <h3 class="card-title">All Bakery Orders</h3>
             <div class="card-tools">
@@ -18,7 +31,7 @@
                     <tr>
                         <th>Order</th>
                         <th>Customer</th>
-                        <th>Notes</th>
+                        <th class="order-notes-column">Notes</th>
                         <th>Demand</th>
                         <th>Units</th>
                         <th>Branch</th>
@@ -31,7 +44,7 @@
                 <tbody>
                     @foreach ($orders as $order)
                         <tr>
-                            <td>
+                            <td class="order-notes-column">
                                 <strong>{{ $order->order_number }}</strong><br>
                                 <small class="text-muted">{{ $order->scheduled_for->format('d M Y') }}</small>
                             </td>

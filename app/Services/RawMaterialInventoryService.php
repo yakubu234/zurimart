@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialMovement;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -42,15 +43,14 @@ class RawMaterialInventoryService
             });
     }
 
-    public function recentMovements(Branch $branch, int $limit = 25): Collection
+    public function recentMovements(Branch $branch, int $perPage = 10, string $pageName = 'activity_page'): LengthAwarePaginator
     {
         return RawMaterialMovement::query()
             ->with(['rawMaterial', 'recorder'])
             ->where('branch_id', $branch->id)
             ->latest('movement_date')
             ->latest('id')
-            ->limit($limit)
-            ->get();
+            ->paginate($perPage, ['*'], $pageName);
     }
 
     public function recordMovement(Branch $branch, RawMaterial $material, User $user, array $data): RawMaterialMovement
@@ -99,6 +99,85 @@ class RawMaterialInventoryService
         }
 
         return $movement->load(['rawMaterial', 'branch', 'recorder']);
+    }
+
+    public function updateMovement(RawMaterialMovement $movement, array $data): RawMaterialMovement
+    {
+        return DB::transaction(function () use ($movement, $data) {
+            $movement = RawMaterialMovement::query()->lockForUpdate()->findOrFail($movement->id);
+            $oldMaterialId = (int) $movement->raw_material_id;
+            $newMaterialId = (int) $data['raw_material_id'];
+            $materialIds = array_values(array_unique([$oldMaterialId, $newMaterialId]));
+
+            $otherMovements = RawMaterialMovement::query()
+                ->where('branch_id', $movement->branch_id)
+                ->whereIn('raw_material_id', $materialIds)
+                ->whereKeyNot($movement->id)
+                ->lockForUpdate()
+                ->get()
+                ->groupBy('raw_material_id');
+
+            $remainingOldBalance = $this->movementBalance($otherMovements->get($oldMaterialId, collect()));
+
+            if ($oldMaterialId !== $newMaterialId && $remainingOldBalance < 0) {
+                $this->throwNegativeBalanceError($oldMaterialId);
+            }
+
+            $newBalance = $this->movementBalance($otherMovements->get($newMaterialId, collect()))
+                + ($data['movement_type'] === 'received' ? (float) $data['quantity'] : -((float) $data['quantity']));
+
+            if ($newBalance < 0) {
+                $this->throwNegativeBalanceError($newMaterialId);
+            }
+
+            $movement->update([
+                'raw_material_id' => $newMaterialId,
+                'movement_type' => $data['movement_type'],
+                'quantity' => $data['quantity'],
+                'movement_date' => $data['movement_date'],
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            return $movement->load(['rawMaterial', 'branch', 'recorder']);
+        });
+    }
+
+    public function deleteMovement(RawMaterialMovement $movement): void
+    {
+        DB::transaction(function () use ($movement): void {
+            $movement = RawMaterialMovement::query()->lockForUpdate()->findOrFail($movement->id);
+            $remainingMovements = RawMaterialMovement::query()
+                ->where('branch_id', $movement->branch_id)
+                ->where('raw_material_id', $movement->raw_material_id)
+                ->whereKeyNot($movement->id)
+                ->lockForUpdate()
+                ->get();
+
+            if ($this->movementBalance($remainingMovements) < 0) {
+                $this->throwNegativeBalanceError((int) $movement->raw_material_id);
+            }
+
+            $movement->delete();
+        });
+    }
+
+    private function movementBalance(Collection $movements): float
+    {
+        return (float) $movements->sum(
+            fn (RawMaterialMovement $movement) => $movement->movement_type === 'received'
+                ? (float) $movement->quantity
+                : -((float) $movement->quantity)
+        );
+    }
+
+    private function throwNegativeBalanceError(int $materialId): never
+    {
+        $material = RawMaterial::query()->find($materialId);
+        $materialName = $material?->name ?? 'this raw material';
+
+        throw ValidationException::withMessages([
+            'movement' => "This change cannot be saved because it would leave {$materialName} with negative stock.",
+        ]);
     }
 
     private function formatQuantity(float $quantity): string

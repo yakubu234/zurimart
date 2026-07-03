@@ -5,7 +5,7 @@
 @section('page_intro', 'Manage the product types that organize the bakery catalog, such as Core, Loaf, and Specialty.')
 
 @section('page')
-    <div class="card">
+    <div class="card card-secondary">
         <div class="card-header">
             <h3 class="card-title">Product Types</h3>
             <div class="card-tools">

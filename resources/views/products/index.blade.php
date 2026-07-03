@@ -5,7 +5,7 @@
 @section('page_intro', 'Add, edit, deactivate, and review bakery products with clear category ownership and stock visibility.')
 
 @section('page')
-    <div class="card">
+    <div class="card card-success">
         <div class="card-header">
             <h3 class="card-title">Products</h3>
             <div class="card-tools">

@@ -51,7 +51,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/daily-reports', [DailyReportController::class, 'index'])->middleware('can:manage-daily-reports')->name('daily-reports.index');
     Route::put('/daily-reports', [DailyReportController::class, 'update'])->middleware('can:manage-daily-reports')->name('daily-reports.update');
     Route::get('/inventory', [InventoryController::class, 'index'])->middleware('can:manage-inventory')->name('inventory.index');
+    Route::get('/inventory/materials', [InventoryController::class, 'materials'])->middleware('can:manage-all-inventory')->name('inventory.materials.index');
     Route::post('/inventory/movements', [InventoryController::class, 'storeMovement'])->middleware('can:manage-inventory')->name('inventory.movements.store');
+    Route::put('/inventory/movements/{rawMaterialMovement}', [InventoryController::class, 'updateMovement'])->middleware('can:edit-inventory-movements')->name('inventory.movements.update');
+    Route::delete('/inventory/movements/{rawMaterialMovement}', [InventoryController::class, 'destroyMovement'])->middleware('can:delete-inventory-movements')->name('inventory.movements.destroy');
     Route::post('/inventory/materials', [InventoryController::class, 'storeMaterial'])->middleware('can:manage-all-inventory')->name('inventory.materials.store');
     Route::put('/inventory/materials/{rawMaterial}', [InventoryController::class, 'updateMaterial'])->middleware('can:manage-all-inventory')->name('inventory.materials.update');
     Route::get('/categories', [ProductCategoryController::class, 'index'])->middleware('can:manage-categories')->name('categories.index');

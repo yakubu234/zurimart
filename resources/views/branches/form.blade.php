@@ -5,7 +5,7 @@
 @section('page_intro', 'Maintain branch code, manager details, contact information, capacity, and order availability.')
 
 @section('page')
-    <div class="card card-warning card-outline">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">{{ $branch->exists ? 'Update Branch Details' : 'Create a New Branch' }}</h3>
         </div>

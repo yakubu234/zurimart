@@ -13,8 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class OrderWorkflowService
 {
-    public function __construct(private readonly NotificationDispatchService $notifications)
-    {
+    public function __construct(
+        private readonly NotificationDispatchService $notifications,
+        private readonly BranchProductStockService $branchStocks,
+    ) {
     }
 
     public function createOrder(array $payload): Order
@@ -24,6 +26,7 @@ class OrderWorkflowService
 
             $branch = Branch::query()->lockForUpdate()->findOrFail($payload['branch_id']);
             $this->assertPlacementCapacity($branch, $summary['scheduled_for'], $summary['total_units']);
+            $this->branchStocks->assertAvailable($branch, $summary['line_items']);
 
             $order = Order::query()->create([
                 'order_number' => $this->nextOrderNumber(),
@@ -86,12 +89,12 @@ class OrderWorkflowService
 
             $summary = $this->buildOrderSummary($payload);
             $branch = Branch::query()->lockForUpdate()->findOrFail($payload['branch_id']);
-
-            if ($wasAccepted) {
-                $this->reserveAcceptedOrderResources($branch, $summary['scheduled_for'], $summary['total_units'], $summary['line_items']);
-            } else {
-                $this->assertPlacementCapacity($branch, $summary['scheduled_for'], $summary['total_units']);
-            }
+            $this->assertPlacementCapacity($branch, $summary['scheduled_for'], $summary['total_units']);
+            $this->branchStocks->assertAvailable(
+                $branch,
+                $summary['line_items'],
+                $wasAccepted ? $order->id : null
+            );
 
             $order->update([
                 'branch_id' => $branch->id,
@@ -101,7 +104,7 @@ class OrderWorkflowService
                 'customer_type' => $payload['customer_type'],
                 'demand_type' => $payload['demand_type'],
                 'pricing_tier' => $summary['pricing_tier'],
-                'status' => $wasAccepted ? 'accepted' : 'pending',
+                'status' => 'pending',
                 'scheduled_for' => $summary['scheduled_for'],
                 'total_units' => $summary['total_units'],
                 'total_weight_grams' => $summary['total_weight_grams'],
@@ -109,11 +112,22 @@ class OrderWorkflowService
                 'discount_amount' => $summary['discount_amount'],
                 'total_amount' => $summary['total_amount'],
                 'notes' => $payload['notes'] ?? null,
+                'accepted_at' => null,
                 'rejection_reason' => null,
                 'rejected_at' => null,
             ]);
 
             $this->syncOrderItems($order, $summary['line_items'], $summary['pricing_tier']);
+
+            if ($wasAccepted && $this->notificationsEnabledFor('notifications.event_order_placed')) {
+                $message = "Order {$order->order_number} was edited and returned to pending review. Its previous stock and capacity reservation has been released.";
+                $this->notifications->notifyBranch($branch, $order, 'Edited order requires review', $message, 'order_placed');
+                $this->notifications->notifyAdmins('Edited order requires review', $message, 'order_placed', $order, $branch, [
+                    'demand_type' => $order->demand_type,
+                    'pricing_tier' => $order->pricing_tier,
+                    'total_units' => $order->total_units,
+                ]);
+            }
 
             return $order->load(['branch', 'items']);
         });
@@ -135,7 +149,7 @@ class OrderWorkflowService
     public function acceptOrder(Order $order): void
     {
         DB::transaction(function () use ($order) {
-            $order = Order::query()->lockForUpdate()->with('branch')->findOrFail($order->id);
+            $order = Order::query()->lockForUpdate()->with(['branch', 'items.product'])->findOrFail($order->id);
 
             if ($order->status !== 'pending' || ! $order->branch) {
                 throw ValidationException::withMessages([
@@ -144,12 +158,11 @@ class OrderWorkflowService
             }
 
             $branch = Branch::query()->lockForUpdate()->findOrFail($order->branch_id);
+            $productionDate = $order->scheduled_for->copy()->startOfDay();
             $slot = BranchCapacitySlot::query()
-                ->where('branch_id', $branch->id)
-                ->whereDate('production_date', $order->scheduled_for)
                 ->lockForUpdate()
                 ->firstOrCreate(
-                    ['branch_id' => $branch->id, 'production_date' => $order->scheduled_for->toDateString()],
+                    ['branch_id' => $branch->id, 'production_date' => $productionDate],
                     ['capacity_units' => $branch->daily_capacity_units, 'locked_units' => 0]
                 );
 
@@ -167,10 +180,20 @@ class OrderWorkflowService
                 ]);
             }
 
+            $lineItems = $order->items
+                ->filter(fn (OrderItem $item) => ! is_null($item->product))
+                ->map(fn (OrderItem $item) => [
+                    'product' => $item->product,
+                    'quantity' => $item->quantity,
+                ])
+                ->values()
+                ->all();
+            $this->branchStocks->assertAvailable($branch, $lineItems);
+
             $projectedLockedUnits = $slot->locked_units + $order->total_units;
             $slot->update(['locked_units' => $projectedLockedUnits]);
 
-            foreach ($order->items()->with('product')->get() as $item) {
+            foreach ($order->items as $item) {
                 if ($item->product && $item->product->stock_units < $item->quantity) {
                     throw ValidationException::withMessages([
                         'order' => "Insufficient stock for {$item->product_name}.",
@@ -204,7 +227,7 @@ class OrderWorkflowService
 
             $threshold = (int) app(AppSettingsService::class)->get('notifications.low_stock_threshold', 150);
             if ($this->notificationsEnabledFor('notifications.event_low_stock')) {
-                foreach ($order->items()->with('product')->get() as $item) {
+                foreach ($order->items as $item) {
                     if ($item->product && $item->product->stock_units <= $threshold) {
                         $this->notifications->notifyLowStock($item->product, $branch, $order);
                     }
@@ -381,60 +404,13 @@ class OrderWorkflowService
         }
     }
 
-    protected function reserveAcceptedOrderResources(Branch $branch, string $scheduledFor, int $totalUnits, array $lineItems): void
-    {
-        $slot = BranchCapacitySlot::query()
-            ->where('branch_id', $branch->id)
-            ->whereDate('production_date', $scheduledFor)
-            ->lockForUpdate()
-            ->firstOrCreate(
-                ['branch_id' => $branch->id, 'production_date' => $scheduledFor],
-                ['capacity_units' => $branch->daily_capacity_units, 'locked_units' => 0]
-            );
-
-        if ($branch->status !== 'available' || $slot->locked_units >= $slot->capacity_units) {
-            throw ValidationException::withMessages([
-                'branch_id' => 'This branch is currently unavailable for the selected production date.',
-            ]);
-        }
-
-        if (($slot->locked_units + $totalUnits) > $slot->capacity_units) {
-            $branch->update(['status' => 'overly_booked']);
-
-            throw ValidationException::withMessages([
-                'order' => 'Updating this order would exceed oven capacity for the selected date.',
-            ]);
-        }
-
-        foreach ($lineItems as $lineItem) {
-            $product = $lineItem['product'];
-
-            if ($product->stock_units < $lineItem['quantity']) {
-                throw ValidationException::withMessages([
-                    'order' => "Insufficient stock for {$product->name}.",
-                ]);
-            }
-        }
-
-        $slot->update(['locked_units' => $slot->locked_units + $totalUnits]);
-
-        foreach ($lineItems as $lineItem) {
-            $lineItem['product']->decrement('stock_units', $lineItem['quantity']);
-        }
-
-        if ($slot->locked_units >= $slot->capacity_units) {
-            $branch->update(['status' => 'overly_booked']);
-        }
-    }
-
     protected function assertPlacementCapacity(Branch $branch, string $scheduledFor, int $requestedUnits): void
     {
+        $productionDate = Carbon::parse($scheduledFor)->startOfDay();
         $slot = BranchCapacitySlot::query()
-            ->where('branch_id', $branch->id)
-            ->whereDate('production_date', $scheduledFor)
             ->lockForUpdate()
             ->firstOrCreate(
-                ['branch_id' => $branch->id, 'production_date' => $scheduledFor],
+                ['branch_id' => $branch->id, 'production_date' => $productionDate],
                 ['capacity_units' => $branch->daily_capacity_units, 'locked_units' => 0]
             );
 

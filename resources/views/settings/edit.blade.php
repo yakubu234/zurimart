@@ -8,7 +8,7 @@
     <form action="{{ route('settings.update') }}" method="POST">
         @csrf
         @method('PUT')
-        <div class="card card-outline card-warning">
+        <div class="card card-warning">
             <div class="card-header">
                 <h3 class="card-title">Order Quantity and Pricing Rules</h3>
             </div>
@@ -41,7 +41,7 @@
         </div>
         <div class="row">
             <div class="col-lg-6">
-                <div class="card card-outline card-primary">
+                <div class="card card-primary">
                     <div class="card-header">
                         <h3 class="card-title">Email Delivery Settings</h3>
                     </div>
@@ -102,7 +102,7 @@
             </div>
 
             <div class="col-lg-6">
-                <div class="card card-outline card-success">
+                <div class="card card-success">
                     <div class="card-header">
                         <h3 class="card-title">WhatsApp Delivery Settings</h3>
                     </div>
@@ -144,7 +144,7 @@
 
         <div class="row">
             <div class="col-lg-12">
-                <div class="card card-outline card-warning">
+                <div class="card card-warning">
                     <div class="card-header">
                         <h3 class="card-title">Notification Event Rules</h3>
                     </div>
@@ -235,7 +235,7 @@
         </div>
     </form>
 
-    <div class="card">
+    <div class="card card-info">
         <div class="card-header">
             <h3 class="card-title">Recent Notification Attempts</h3>
         </div>

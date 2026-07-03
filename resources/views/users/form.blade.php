@@ -5,7 +5,7 @@
 @section('page_intro', 'Maintain identity, role assignment, branch ownership, account status, and direct permission overrides.')
 
 @section('page')
-    <div class="card card-warning card-outline">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">{{ $user->exists ? 'Update User Details' : 'Create a New User' }}</h3>
         </div>

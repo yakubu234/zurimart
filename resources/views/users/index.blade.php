@@ -5,7 +5,7 @@
 @section('page_intro', 'Manage user accounts, assign roles, attach branch ownership, and apply direct permission overrides when needed.')
 
 @section('page')
-    <div class="card">
+    <div class="card card-primary">
         <div class="card-header">
             <h3 class="card-title">System Users</h3>
             <div class="card-tools">

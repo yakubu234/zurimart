@@ -7,7 +7,7 @@
 @section('page')
     <div class="row">
         <div class="col-lg-7">
-            <div class="card card-outline card-info">
+            <div class="card card-info">
                 <div class="card-header">
                     <h3 class="card-title">Weekly Sales Comparison</h3>
                 </div>
@@ -31,7 +31,7 @@
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="card card-outline card-secondary">
+            <div class="card card-secondary">
                 <div class="card-header">
                     <h3 class="card-title">Branch Order Distribution</h3>
                 </div>
@@ -55,7 +55,7 @@
 
     <div class="row">
         <div class="col-lg-7">
-            <div class="card card-outline card-warning">
+            <div class="card card-warning">
                 <div class="card-header">
                     <h3 class="card-title">Branch Daily Report Summary</h3>
                 </div>
@@ -86,7 +86,7 @@
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="card card-outline card-danger">
+            <div class="card card-danger">
                 <div class="card-header">
                     <h3 class="card-title">72-Hour Stale Stock</h3>
                 </div>

@@ -5,7 +5,7 @@
 @section('page_intro', 'Define reusable access profiles and attach permission bundles that can be assigned to users.')
 
 @section('page')
-    <div class="card">
+    <div class="card card-secondary">
         <div class="card-header">
             <h3 class="card-title">Roles</h3>
             <div class="card-tools">

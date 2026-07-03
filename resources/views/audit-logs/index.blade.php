@@ -35,12 +35,13 @@
         </div>
     </div>
 
-    <div class="card card-outline card-primary">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">Filter Audit Logs</h3>
         </div>
         <div class="card-body">
             <form method="GET" action="{{ route('audit-logs.index') }}">
+                <input type="hidden" name="per_page" value="{{ $perPage }}">
                 <div class="row">
                     <div class="col-lg-4 col-md-6">
                         <div class="form-group">
@@ -117,9 +118,24 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card card-info">
         <div class="card-header">
             <h3 class="card-title">Recorded Activity</h3>
+            <div class="card-tools">
+                <form method="GET" action="{{ route('audit-logs.index') }}" class="form-inline">
+                    @foreach (request()->except(['page', 'per_page']) as $name => $value)
+                        @if (is_scalar($value) && filled($value))
+                            <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                        @endif
+                    @endforeach
+                    <label for="audit_per_page" class="mr-2 mb-0 font-weight-normal">Rows</label>
+                    <select id="audit_per_page" name="per_page" class="form-control form-control-sm" onchange="this.form.submit()">
+                        @foreach ($pageSizes as $pageSize)
+                            <option value="{{ $pageSize }}" @selected($perPage === $pageSize)>{{ $pageSize }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            </div>
         </div>
         <div class="card-body table-responsive p-0">
             <table class="table table-striped table-hover">
@@ -193,10 +209,13 @@
                 </tbody>
             </table>
         </div>
-        @if ($logs->hasPages())
-            <div class="card-footer">
-                {{ $logs->links() }}
-            </div>
-        @endif
+        <div class="card-footer d-flex flex-wrap justify-content-between align-items-center">
+            <span class="text-muted">
+                Showing {{ $logs->firstItem() ?? 0 }} to {{ $logs->lastItem() ?? 0 }} of {{ $logs->total() }}
+            </span>
+            @if ($logs->hasPages())
+                <div>{{ $logs->links('pagination::bootstrap-4') }}</div>
+            @endif
+        </div>
     </div>
 @endsection

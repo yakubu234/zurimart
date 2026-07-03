@@ -21,7 +21,11 @@ class AuditLogController extends Controller
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50, 100])],
         ]);
+
+        $pageSizes = [10, 25, 50, 100];
+        $perPage = (int) ($filters['per_page'] ?? 25);
 
         $logs = AuditLog::query()
             ->with(['user', 'branch'])
@@ -41,7 +45,7 @@ class AuditLogController extends Controller
             ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
             ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('created_at', '<=', $date))
             ->latest('id')
-            ->paginate(30)
+            ->paginate($perPage)
             ->withQueryString();
 
         $modelTypes = AuditLog::query()
@@ -58,7 +62,9 @@ class AuditLogController extends Controller
             'modelTypes',
             'users',
             'branches',
-            'todayCount'
+            'todayCount',
+            'pageSizes',
+            'perPage'
         ));
     }
 }

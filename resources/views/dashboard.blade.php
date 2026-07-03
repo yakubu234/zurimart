@@ -94,7 +94,7 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card card-outline card-warning">
+            <div class="card card-warning">
                 <div class="card-header">
                     <h3 class="card-title">Sales Trend Snapshot</h3>
                 </div>
@@ -117,7 +117,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card card-primary">
                 <div class="card-header border-0">
                     <h3 class="card-title">Recent Orders</h3>
                     <div class="card-tools">
@@ -156,7 +156,7 @@
                 </div>
             </div>
 
-            <div class="card card-outline card-info">
+            <div class="card card-info">
                 <div class="card-header">
                     <h3 class="card-title">Branch Daily Reports Today</h3>
                     <div class="card-tools">
@@ -191,7 +191,7 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card card-outline card-primary">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h3 class="card-title">Branch Capacity Today</h3>
                 </div>
@@ -217,7 +217,7 @@
                 </div>
             </div>
 
-            <div class="card card-outline card-secondary">
+            <div class="card card-secondary">
                 <div class="card-header">
                     <h3 class="card-title">Branch Performance</h3>
                 </div>
@@ -237,7 +237,7 @@
                 </div>
             </div>
 
-            <div class="card card-outline card-info">
+            <div class="card card-info">
                 <div class="card-header">
                     <h3 class="card-title">Notifications</h3>
                 </div>

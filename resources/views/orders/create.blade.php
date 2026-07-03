@@ -130,7 +130,7 @@
         @endif
         <div class="row">
             <div class="col-lg-5 order-form-sidebar">
-                <div class="card card-warning card-outline">
+                <div class="card card-warning">
                     <div class="card-header"><h3 class="card-title">Customer and Routing Details</h3></div>
                     <div class="card-body">
                         <div class="form-group">
@@ -166,7 +166,7 @@
                         </div>
                         <div class="form-group">
                             <label>Tagged Branch</label>
-                            <select name="branch_id" class="form-control" required>
+                            <select id="branch_id" name="branch_id" class="form-control" required>
                                 <option value="">Select available branch</option>
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}" @selected((string) old('branch_id', $order->branch_id) === (string) $branch->id)>{{ $branch->name }}</option>
@@ -183,7 +183,7 @@
             </div>
 
             <div class="col-lg-7">
-                <div class="card">
+                <div class="card card-info">
                     <div class="card-header"><h3 class="card-title">Product Quantities</h3></div>
                     <div class="card-body table-responsive p-0">
                         <table class="table table-striped mb-0 product-table">
@@ -193,7 +193,7 @@
                                     <th>Category</th>
                                     <th>Retail</th>
                                     <th>Wholesale</th>
-                                    <th>Stock</th>
+                                    <th>Branch Stock</th>
                                     <th style="width: 120px;">Qty</th>
                                 </tr>
                             </thead>
@@ -207,7 +207,9 @@
                                         <td data-label="Category">{{ $product->category }}</td>
                                         <td data-label="Retail">N{{ number_format($product->retail_price, 0) }}</td>
                                         <td data-label="Wholesale">N{{ number_format($product->wholesale_price, 0) }}</td>
-                                        <td data-label="Stock">{{ $product->stock_units }}</td>
+                                        <td data-label="Branch Stock">
+                                            <strong class="branch-stock-value" data-product-id="{{ $product->id }}">Select branch</strong>
+                                        </td>
                                         <td data-label="Qty">
                                             <input type="number" min="0" inputmode="numeric" name="items[{{ $product->id }}]" value="{{ old('items.' . $product->id, $existingItems[$product->id] ?? 0) }}" class="form-control quantity-input">
                                         </td>
@@ -230,4 +232,38 @@
             </div>
         </div>
     </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const branchSelect = document.getElementById('branch_id');
+            const branchStocks = @json($branchStocks);
+
+            const updateBranchStocks = () => {
+                const branchId = branchSelect.value;
+                const selectedBranchStocks = branchStocks[branchId] || null;
+
+                document.querySelectorAll('.branch-stock-value').forEach((stockElement) => {
+                    const productId = stockElement.dataset.productId;
+                    const quantityInput = stockElement.closest('tr').querySelector('.quantity-input');
+
+                    if (! selectedBranchStocks) {
+                        stockElement.textContent = 'Select branch';
+                        stockElement.classList.remove('text-success', 'text-danger');
+                        quantityInput.removeAttribute('max');
+
+                        return;
+                    }
+
+                    const available = Number(selectedBranchStocks[productId] || 0);
+                    stockElement.textContent = available.toLocaleString();
+                    stockElement.classList.toggle('text-success', available > 0);
+                    stockElement.classList.toggle('text-danger', available === 0);
+                    quantityInput.max = available;
+                });
+            };
+
+            branchSelect.addEventListener('change', updateBranchStocks);
+            updateBranchStocks();
+        });
+    </script>
 @endsection

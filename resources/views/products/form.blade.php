@@ -5,7 +5,7 @@
 @section('page_intro', 'Maintain bakery products with proper pricing, stock, and product type assignment.')
 
 @section('page')
-    <div class="card card-warning card-outline">
+    <div class="card card-warning">
         <div class="card-header">
             <h3 class="card-title">{{ $product->exists ? 'Update Product Details' : 'Create a New Product' }}</h3>
         </div>
