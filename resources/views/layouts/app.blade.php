@@ -2,6 +2,35 @@
 
 @push('css')
     <style>
+        .btn-default,
+        .btn-light {
+            color: #fff !important;
+            background-color: #111 !important;
+            border-color: #111 !important;
+        }
+
+        .btn-default:hover,
+        .btn-default:focus,
+        .btn-default:active,
+        .btn-default:not(:disabled):not(.disabled).active,
+        .btn-light:hover,
+        .btn-light:focus,
+        .btn-light:active,
+        .btn-light:not(:disabled):not(.disabled).active {
+            color: #fff !important;
+            background-color: #000 !important;
+            border-color: #000 !important;
+        }
+
+        .btn-default.disabled,
+        .btn-default:disabled,
+        .btn-light.disabled,
+        .btn-light:disabled {
+            color: #fff !important;
+            background-color: #111 !important;
+            border-color: #111 !important;
+        }
+
         .drag-scroll-enabled {
             cursor: grab;
             -webkit-overflow-scrolling: touch;

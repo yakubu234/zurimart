@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Branch;
 use App\Models\BranchInventorySnapshot;
 use App\Models\OrderItem;
+use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class BranchProductStockService
@@ -18,10 +19,12 @@ class BranchProductStockService
         array $branchIds,
         array $productIds,
         ?int $excludeAcceptedOrderId = null,
-        bool $lockForUpdate = false
+        bool $lockForUpdate = false,
+        ?string $stockDate = null
     ): array {
         $branchIds = collect($branchIds)->map(fn ($id) => (int) $id)->unique()->values()->all();
         $productIds = collect($productIds)->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $stockDate = Carbon::parse($stockDate ?? now())->toDateString();
         $stock = [];
 
         foreach ($branchIds as $branchId) {
@@ -37,6 +40,7 @@ class BranchProductStockService
         $snapshotQuery = BranchInventorySnapshot::query()
             ->whereIn('branch_id', $branchIds)
             ->whereIn('product_id', $productIds)
+            ->whereDate('inventory_date', '<=', $stockDate)
             ->orderByDesc('inventory_date')
             ->orderByDesc('id');
 
@@ -56,6 +60,7 @@ class BranchProductStockService
             ->selectRaw('orders.branch_id, order_items.product_id, SUM(order_items.quantity) as reserved_units')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('orders.status', 'accepted')
+            ->whereDate('orders.scheduled_for', $stockDate)
             ->whereIn('orders.branch_id', $branchIds)
             ->whereIn('order_items.product_id', $productIds)
             ->when($excludeAcceptedOrderId, fn ($query, $orderId) => $query->where('orders.id', '!=', $orderId))
@@ -81,13 +86,14 @@ class BranchProductStockService
         Branch $branch,
         array $lineItems,
         ?int $excludeAcceptedOrderId = null,
-        bool $lockForUpdate = true
+        bool $lockForUpdate = true,
+        ?string $stockDate = null
     ): void {
         $productIds = collect($lineItems)
             ->pluck('product.id')
             ->map(fn ($id) => (int) $id)
             ->all();
-        $stock = $this->stockMap([$branch->id], $productIds, $excludeAcceptedOrderId, $lockForUpdate);
+        $stock = $this->stockMap([$branch->id], $productIds, $excludeAcceptedOrderId, $lockForUpdate, $stockDate);
 
         foreach ($lineItems as $lineItem) {
             $product = $lineItem['product'];

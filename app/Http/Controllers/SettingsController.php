@@ -6,6 +6,7 @@ use App\Models\SystemNotification;
 use App\Services\AppSettingsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
@@ -23,7 +24,7 @@ class SettingsController extends Controller
         return view('settings.edit', compact('notificationSettings', 'orderSettings', 'recentNotifications'));
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'email_enabled' => ['nullable', 'boolean'],
@@ -101,6 +102,12 @@ class SettingsController extends Controller
             'orders.retail_minimum_units' => $data['retail_minimum_units'],
             'orders.wholesale_minimum_units' => $data['wholesale_minimum_units'],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'System settings updated successfully.',
+            ]);
+        }
 
         return back()->with('success', 'System settings updated successfully.');
     }

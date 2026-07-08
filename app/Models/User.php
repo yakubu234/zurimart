@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use App\Models\ChatMessage;
 use App\Models\Order;
 use App\Support\NotificationEvents;
 use Illuminate\Database\Eloquent\Collection;
@@ -79,6 +80,16 @@ class User extends Authenticatable
     public function createdOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'created_by');
+    }
+
+    public function sentChatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class, 'sender_id');
+    }
+
+    public function receivedChatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class, 'recipient_id');
     }
 
     public function roleKey(): ?string

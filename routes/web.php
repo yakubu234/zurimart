@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PermissionController;
@@ -34,6 +35,9 @@ Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->middlewar
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat/messages', [ChatController::class, 'store'])->name('chat.messages.store');
+    Route::get('/chat/users/{user}/messages', [ChatController::class, 'messages'])->name('chat.messages.index');
     Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->middleware('can:manage-order-approvals')->name('orders.accept');
     Route::post('/orders/{order}/reject', [OrderController::class, 'reject'])->middleware('can:manage-order-approvals')->name('orders.reject');
     Route::get('/branches', [BranchController::class, 'index'])->middleware('can:manage-branches')->name('branches.index');

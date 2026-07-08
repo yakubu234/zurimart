@@ -4,6 +4,17 @@
 @section('page_title', 'User Management')
 @section('page_intro', 'Manage user accounts, assign roles, attach branch ownership, and apply direct permission overrides when needed.')
 
+@push('css')
+    <style>
+        .direct-permissions-text {
+            width: 55ch;
+            max-width: 55ch;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+    </style>
+@endpush
+
 @section('page')
     <div class="card card-primary">
         <div class="card-header">
@@ -43,7 +54,9 @@
                                 @if ($user->permissions->isEmpty())
                                     <span class="text-muted">No overrides</span>
                                 @else
-                                    {{ $user->permissions->pluck('name')->join(', ') }}
+                                    <div class="direct-permissions-text">
+                                        {{ $user->permissions->pluck('name')->join(', ') }}
+                                    </div>
                                 @endif
                             </td>
                             <td>@include('partials.badge', ['value' => $user->status])</td>

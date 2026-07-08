@@ -5,7 +5,7 @@
 @section('page_intro', 'Super Admin can configure order limits, notifications, SMTP, and WhatsApp without hard-coding operational rules.')
 
 @section('page')
-    <form action="{{ route('settings.update') }}" method="POST">
+    <form action="{{ route('settings.update') }}" method="POST" id="system-settings-form">
         @csrf
         @method('PUT')
         <div class="card card-warning">
@@ -281,6 +281,9 @@
         <div class="card">
             <div class="card-footer">
                 <button type="submit" class="btn btn-warning">Save System Settings</button>
+                <span id="settings-autosave-status" class="ml-3 small text-muted" role="status" aria-live="polite">
+                    Changes save automatically when you leave a field.
+                </span>
             </div>
         </div>
     </form>
@@ -354,10 +357,111 @@
 
                 if (rows.length === 1) {
                     rows[0].querySelector('input').value = '';
+                    document.getElementById('system-settings-form').dispatchEvent(new CustomEvent('settings:autosave'));
                     return;
                 }
 
                 removeButton.closest('.manual-email-row').remove();
+                document.getElementById('system-settings-form').dispatchEvent(new CustomEvent('settings:autosave'));
+            });
+        });
+    </script>
+@endpush
+
+@push('js')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('system-settings-form');
+            const status = document.getElementById('settings-autosave-status');
+            let isSaving = false;
+            let savePending = false;
+            let manualSubmit = false;
+
+            const setStatus = (message, className) => {
+                status.textContent = message;
+                status.className = `ml-3 small ${className}`;
+            };
+
+            const saveSettings = async () => {
+                if (isSaving) {
+                    savePending = true;
+                    return;
+                }
+
+                isSaving = true;
+                savePending = false;
+                setStatus('Saving changes…', 'text-info');
+
+                const formData = new FormData(form);
+                const secretSnapshots = Array.from(form.querySelectorAll('input[type="password"]'))
+                    .map((input) => ({ input, value: input.value }))
+                    .filter(({ value }) => value !== '');
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    const contentType = response.headers.get('content-type') || '';
+                    const result = contentType.includes('application/json')
+                        ? await response.json()
+                        : { message: 'Your session may have expired. Please use Save System Settings.' };
+
+                    if (! response.ok) {
+                        const firstError = result.errors
+                            ? Object.values(result.errors).flat()[0]
+                            : result.message;
+                        throw new Error(firstError || 'The settings could not be saved.');
+                    }
+
+                    secretSnapshots.forEach(({ input, value }) => {
+                        if (input.value === value) {
+                            input.value = '';
+                        }
+                    });
+                    setStatus('All changes saved.', 'text-success');
+                } catch (error) {
+                    setStatus(error.message || 'The settings could not be saved.', 'text-danger');
+                } finally {
+                    isSaving = false;
+
+                    if (savePending) {
+                        saveSettings();
+                    }
+                }
+            };
+
+            form.addEventListener('focusout', (event) => {
+                if (
+                    ! manualSubmit
+                    && event.target.matches('input:not([type="checkbox"]):not([type="radio"]), textarea')
+                ) {
+                    saveSettings();
+                }
+            });
+
+            form.addEventListener('change', (event) => {
+                if (event.target.matches('select, input[type="checkbox"], input[type="radio"]')) {
+                    saveSettings();
+                }
+            });
+
+            form.addEventListener('settings:autosave', saveSettings);
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.addEventListener('pointerdown', () => {
+                manualSubmit = true;
+            });
+            submitButton.addEventListener('pointerup', () => {
+                setTimeout(() => {
+                    manualSubmit = false;
+                }, 0);
+            });
+            submitButton.addEventListener('pointercancel', () => {
+                manualSubmit = false;
             });
         });
     </script>

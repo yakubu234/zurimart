@@ -48,7 +48,8 @@ class OrderController extends Controller
         $order = new Order();
         $branchStocks = $this->branchStocks->stockMap(
             $branches->pluck('id')->all(),
-            $products->pluck('id')->all()
+            $products->pluck('id')->all(),
+            stockDate: now()->toDateString()
         );
         $retailMinimumUnits = max(1, (int) $this->settings->get('orders.retail_minimum_units', 1));
         $wholesaleMinimumUnits = max($retailMinimumUnits, (int) $this->settings->get('orders.wholesale_minimum_units', 50));
@@ -126,7 +127,8 @@ class OrderController extends Controller
         $branchStocks = $this->branchStocks->stockMap(
             $branches->pluck('id')->all(),
             $products->pluck('id')->all(),
-            $order->status === 'accepted' ? $order->id : null
+            $order->status === 'accepted' ? $order->id : null,
+            stockDate: $order->scheduled_for?->toDateString() ?? now()->toDateString()
         );
         $retailMinimumUnits = max(1, (int) $this->settings->get('orders.retail_minimum_units', 1));
         $wholesaleMinimumUnits = max($retailMinimumUnits, (int) $this->settings->get('orders.wholesale_minimum_units', 50));

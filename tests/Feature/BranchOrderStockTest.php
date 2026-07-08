@@ -69,6 +69,63 @@ class BranchOrderStockTest extends TestCase
         $this->assertDatabaseCount('orders', 2);
     }
 
+    public function test_branch_stock_only_reserves_accepted_orders_for_the_selected_production_date(): void
+    {
+        $branch = $this->branch('DATE', 'Date Branch');
+        $product = Product::query()->create([
+            'sku' => 'DATE-LOAF',
+            'name' => 'Date Loaf',
+            'category' => 'Bread',
+            'weight_grams' => 500,
+            'retail_price' => 1000,
+            'wholesale_price' => 900,
+            'stock_units' => 10,
+            'is_active' => true,
+        ]);
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        BranchInventorySnapshot::query()->create([
+            'branch_id' => $branch->id,
+            'product_id' => $product->id,
+            'inventory_date' => now()->toDateString(),
+            'closing_units' => 5,
+        ]);
+
+        $pastOrder = Order::query()->create([
+            'order_number' => 'ORD-DATE-OLD',
+            'branch_id' => $branch->id,
+            'customer_name' => 'Old Customer',
+            'customer_type' => 'public_retailer',
+            'demand_type' => 'retail',
+            'pricing_tier' => 'retail',
+            'status' => 'accepted',
+            'scheduled_for' => now()->subDay()->toDateString(),
+            'total_units' => 5,
+            'total_weight_grams' => 2500,
+            'subtotal_amount' => 5000,
+            'discount_amount' => 0,
+            'total_amount' => 5000,
+        ]);
+        $pastOrder->items()->create([
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_sku' => $product->sku,
+            'unit_weight_grams' => $product->weight_grams,
+            'quantity' => 5,
+            'unit_price' => 1000,
+            'line_total' => 5000,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('orders.create', absolute: false))
+            ->assertOk()
+            ->assertViewHas('branchStocks', fn (array $stocks) => $stocks[$branch->id][$product->id] === 5);
+
+        $this->actingAs($admin)
+            ->post(route('orders.store', absolute: false), $this->payload($branch, $product, 5))
+            ->assertRedirect();
+    }
+
     private function branch(string $code, string $name): Branch
     {
         return Branch::query()->create([

@@ -26,7 +26,7 @@ class OrderWorkflowService
 
             $branch = Branch::query()->lockForUpdate()->findOrFail($payload['branch_id']);
             $this->assertPlacementCapacity($branch, $summary['scheduled_for'], $summary['total_units']);
-            $this->branchStocks->assertAvailable($branch, $summary['line_items']);
+            $this->branchStocks->assertAvailable($branch, $summary['line_items'], stockDate: $summary['scheduled_for']);
 
             $order = Order::query()->create([
                 'order_number' => $this->nextOrderNumber(),
@@ -93,7 +93,8 @@ class OrderWorkflowService
             $this->branchStocks->assertAvailable(
                 $branch,
                 $summary['line_items'],
-                $wasAccepted ? $order->id : null
+                $wasAccepted ? $order->id : null,
+                stockDate: $summary['scheduled_for']
             );
 
             $order->update([
@@ -188,7 +189,7 @@ class OrderWorkflowService
                 ])
                 ->values()
                 ->all();
-            $this->branchStocks->assertAvailable($branch, $lineItems);
+            $this->branchStocks->assertAvailable($branch, $lineItems, stockDate: $order->scheduled_for->toDateString());
 
             $projectedLockedUnits = $slot->locked_units + $order->total_units;
             $slot->update(['locked_units' => $projectedLockedUnits]);

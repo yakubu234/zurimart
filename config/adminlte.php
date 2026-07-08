@@ -333,6 +333,11 @@ return [
             'icon' => 'far fa-fw fa-calendar-alt',
             'can' => 'view-bookings',
         ],
+        [
+            'text' => 'Chat',
+            'route' => 'chat.index',
+            'icon' => 'far fa-fw fa-comments',
+        ],
         ['header' => 'PRODUCTION'],
         [
             'text' => 'Branches',

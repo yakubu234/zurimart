@@ -142,6 +142,31 @@ class NotificationRecipientRoutingTest extends TestCase
             ->assertSessionHasErrors('manual_email_recipients.0');
     }
 
+    public function test_settings_update_returns_json_for_autosave_requests(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->putJson(route('settings.update'), [
+                'retail_minimum_units' => 2,
+                'wholesale_minimum_units' => 60,
+                'branch_recipients_enabled' => 1,
+                'manual_email_recipients' => ['alerts@example.com'],
+            ])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'System settings updated successfully.',
+            ]);
+
+        $this->assertDatabaseHas('app_settings', [
+            'key' => 'orders.retail_minimum_units',
+            'value' => '2',
+        ]);
+    }
+
     private function setNotificationSettings(array $settings): void
     {
         foreach ($settings as $key => $value) {
