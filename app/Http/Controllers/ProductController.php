@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Services\BranchProductStockService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,13 +13,27 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    public function index(): View
+    public function index(BranchProductStockService $branchStocks): View
     {
         $products = Product::query()
             ->with('productCategory')
             ->orderBy('category')
             ->orderBy('name')
             ->get();
+
+        $branches = Branch::query()->pluck('id')->all();
+        $stockMap = $branchStocks->stockMap(
+            $branches,
+            $products->pluck('id')->all(),
+            stockDate: now()->toDateString()
+        );
+
+        $products->each(function (Product $product) use ($stockMap) {
+            $currentStock = collect($stockMap)
+                ->sum(fn (array $branchStock) => (int) ($branchStock[$product->id] ?? 0));
+
+            $product->setAttribute('current_stock_units', $currentStock);
+        });
 
         return view('products.index', compact('products'));
     }

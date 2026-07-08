@@ -21,8 +21,18 @@
         }
 
         .chat-contact.active {
+            color: #111827;
             border-left-color: #ffc107;
             background: #fff8e1;
+        }
+
+        .chat-contact.active strong,
+        .chat-contact.active .text-muted {
+            color: #111827 !important;
+        }
+
+        .chat-contact.active .small {
+            color: #4b5563 !important;
         }
 
         .chat-message-list {

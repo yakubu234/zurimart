@@ -126,6 +126,65 @@ class BranchOrderStockTest extends TestCase
             ->assertRedirect();
     }
 
+    public function test_product_catalogue_shows_today_live_stock_without_old_order_reservations(): void
+    {
+        $branch = $this->branch('CAT', 'Catalogue Branch');
+        $product = Product::query()->create([
+            'sku' => 'CAT-LOAF',
+            'name' => 'Catalogue Loaf',
+            'category' => 'Bread',
+            'weight_grams' => 500,
+            'retail_price' => 1000,
+            'wholesale_price' => 900,
+            'stock_units' => 0,
+            'is_active' => true,
+        ]);
+
+        $pastOrder = Order::query()->create([
+            'order_number' => 'ORD-CAT-OLD',
+            'branch_id' => $branch->id,
+            'customer_name' => 'Old Customer',
+            'customer_type' => 'public_retailer',
+            'demand_type' => 'retail',
+            'pricing_tier' => 'retail',
+            'status' => 'accepted',
+            'scheduled_for' => now()->subDay()->toDateString(),
+            'total_units' => 5,
+            'total_weight_grams' => 2500,
+            'subtotal_amount' => 5000,
+            'discount_amount' => 0,
+            'total_amount' => 5000,
+        ]);
+        $pastOrder->items()->create([
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_sku' => $product->sku,
+            'unit_weight_grams' => $product->weight_grams,
+            'quantity' => 5,
+            'unit_price' => 1000,
+            'line_total' => 5000,
+        ]);
+
+        app(\App\Services\BranchInventoryService::class)->syncDailyInventory($branch, now()->toDateString(), [
+            $product->id => [
+                'opening_units' => 0,
+                'produced_units' => 5,
+                'sold_units' => 0,
+                'adjustment_units' => 0,
+            ],
+        ]);
+
+        $this->assertSame(5, $product->fresh()->stock_units);
+
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)
+            ->get(route('products.index', absolute: false))
+            ->assertOk()
+            ->assertViewHas('products', fn ($products) => (int) $products->firstWhere('id', $product->id)->current_stock_units === 5)
+            ->assertSee('5 units');
+    }
+
     private function branch(string $code, string $name): Branch
     {
         return Branch::query()->create([

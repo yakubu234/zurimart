@@ -30,6 +30,9 @@
                 </thead>
                 <tbody>
                     @foreach ($products as $product)
+                        @php
+                            $currentStock = (int) ($product->current_stock_units ?? $product->stock_units);
+                        @endphp
                         <tr>
                             <td>{{ $product->sku }}</td>
                             <td>{{ $product->name }}</td>
@@ -38,8 +41,8 @@
                             <td>N{{ number_format($product->retail_price, 0) }}</td>
                             <td>N{{ number_format($product->wholesale_price, 0) }}</td>
                             <td>
-                                <span class="badge {{ $product->stock_units < 150 ? 'badge-danger' : 'badge-success' }}">
-                                    {{ $product->stock_units }} units
+                                <span class="badge {{ $currentStock < 150 ? 'badge-danger' : 'badge-success' }}">
+                                    {{ $currentStock }} units
                                 </span>
                             </td>
                             <td>

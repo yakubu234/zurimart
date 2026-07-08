@@ -62,7 +62,7 @@ class BranchInventoryService
                 }
             }
 
-            $this->syncAggregateProductStocks();
+            $this->syncAggregateProductStocks($date);
         });
     }
 
@@ -230,12 +230,15 @@ class BranchInventoryService
         }
     }
 
-    protected function syncAggregateProductStocks(): void
+    protected function syncAggregateProductStocks(?string $stockDate = null): void
     {
-        Product::query()->each(function (Product $product) {
+        $stockDate = Carbon::parse($stockDate ?? now())->toDateString();
+
+        Product::query()->each(function (Product $product) use ($stockDate) {
             $latestSnapshots = BranchInventorySnapshot::query()
                 ->select('branch_id', DB::raw('MAX(inventory_date) as latest_date'))
                 ->where('product_id', $product->id)
+                ->whereDate('inventory_date', '<=', $stockDate)
                 ->groupBy('branch_id');
 
             $total = BranchInventorySnapshot::query()
@@ -250,6 +253,7 @@ class BranchInventoryService
             $reserved = OrderItem::query()
                 ->join('orders', 'orders.id', '=', 'order_items.order_id')
                 ->where('orders.status', 'accepted')
+                ->whereDate('orders.scheduled_for', $stockDate)
                 ->where('order_items.product_id', $product->id)
                 ->sum('order_items.quantity');
 
