@@ -5,11 +5,12 @@
 @section('page_intro', 'AdminLTE summary cards and progress views make the bakery numbers easier to read than the custom layout did.')
 
 @section('page')
+    @include('partials.report-filters', ['filterAction' => route('reports.index')])
     <div class="row">
         <div class="col-lg-7">
             <div class="card card-info">
                 <div class="card-header">
-                    <h3 class="card-title">Weekly Sales Comparison</h3>
+                    <h3 class="card-title">Sales Comparison</h3>
                 </div>
                 <div class="card-body">
                     @php $salesMax = max(1, $salesTrend->max(fn ($day) => max($day['retail'], $day['wholesale']))); @endphp
@@ -60,7 +61,7 @@
                     <h3 class="card-title">Branch Daily Report Summary</h3>
                 </div>
                 <div class="card-body table-responsive p-0">
-                    <table class="table table-striped table-hover text-nowrap">
+                    <table class="table table-striped table-hover text-nowrap js-record-table">
                         <thead>
                             <tr>
                                 <th>Branch</th>

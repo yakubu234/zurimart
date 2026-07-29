@@ -5,6 +5,7 @@
 @section('page_intro', 'A cleaner AdminLTE control room for production capacity, tagged orders, wholesale activity, and branch performance.')
 
 @section('page')
+    @include('partials.report-filters', ['filterAction' => route('dashboard')])
     <div class="row">
         <div class="col-lg-2 col-6">
             <div class="small-box bg-info">
@@ -67,7 +68,7 @@
             <div class="small-box bg-gradient-primary">
                 <div class="inner">
                     <h3>{{ $openingUnits }}</h3>
-                    <p>Opening Units Today</p>
+                    <p>Opening Units in Period</p>
                 </div>
                 <div class="icon"><i class="fas fa-door-open"></i></div>
             </div>
@@ -76,7 +77,7 @@
             <div class="small-box bg-gradient-success">
                 <div class="inner">
                     <h3>{{ $closingUnits }}</h3>
-                    <p>Closing Units Today</p>
+                    <p>Closing Units in Period</p>
                 </div>
                 <div class="icon"><i class="fas fa-warehouse"></i></div>
             </div>
@@ -126,7 +127,7 @@
                     </div>
                 </div>
                 <div class="card-body table-responsive p-0">
-                    <table class="table table-striped table-hover text-nowrap">
+                    <table class="table table-striped table-hover text-nowrap js-record-table">
                         <thead>
                             <tr>
                                 <th>Order</th>
@@ -158,13 +159,13 @@
 
             <div class="card card-info">
                 <div class="card-header">
-                    <h3 class="card-title">Branch Daily Reports Today</h3>
+                    <h3 class="card-title">Branch Daily Report Summary</h3>
                     <div class="card-tools">
                         <a href="{{ route('daily-reports.index') }}" class="btn btn-sm btn-default">Open Daily Reports</a>
                     </div>
                 </div>
                 <div class="card-body table-responsive p-0">
-                    <table class="table table-striped table-hover text-nowrap">
+                    <table class="table table-striped table-hover text-nowrap js-record-table">
                         <thead>
                             <tr>
                                 <th>Branch</th>
@@ -193,7 +194,7 @@
         <div class="col-lg-4">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title">Branch Capacity Today</h3>
+                    <h3 class="card-title">Branch Capacity on {{ \Carbon\Carbon::parse($capacityDate)->format('d M Y') }}</h3>
                 </div>
                 <div class="card-body">
                     @foreach ($branches as $row)

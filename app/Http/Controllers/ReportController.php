@@ -7,37 +7,43 @@ use App\Models\BranchInventorySnapshot;
 use App\Models\BranchStockBatch;
 use App\Models\Order;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = Auth::user();
-        $inventoryBranchIds = Branch::query()
-            ->when(
-                $user?->canManageAllDailyReports(),
-                fn ($query) => $query,
-                fn ($query) => $query->when($user?->branch_id, fn ($branchQuery) => $branchQuery->whereKey($user->branch_id))
-            )
-            ->pluck('id');
+        $filters = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => ['integer', 'distinct', 'exists:branches,id'],
+        ]);
+        $dateFrom = Carbon::parse($filters['date_from'] ?? now()->subDays(6)->toDateString())->startOfDay();
+        $dateTo = Carbon::parse($filters['date_to'] ?? now()->toDateString())->endOfDay();
+        $filterBranches = Branch::query()
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id))
+            ->orderBy('name')->get();
+        $requestedBranchIds = collect($filters['branch_ids'] ?? [])->map(fn ($id) => (int) $id);
+        abort_if($requestedBranchIds->diff($filterBranches->pluck('id'))->isNotEmpty(), 403);
+        $selectedBranchIds = ($requestedBranchIds->isNotEmpty() ? $requestedBranchIds : $filterBranches->pluck('id'))->values();
 
-        $salesTrend = collect(range(0, 6))
-            ->map(function (int $offset) use ($user) {
-                $date = Carbon::now()->subDays(6 - $offset)->toDateString();
+        $salesTrend = collect(Carbon::parse($dateFrom)->toPeriod($dateTo))
+            ->map(function (Carbon $date) use ($selectedBranchIds) {
+                $dateString = $date->toDateString();
 
                 return [
-                    'day' => Carbon::parse($date)->format('D'),
+                    'day' => $date->format('d M'),
                     'retail' => (int) Order::query()
-                        ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
-                        ->whereDate('created_at', $date)
+                        ->whereIn('branch_id', $selectedBranchIds)->whereDate('created_at', $dateString)
                         ->where('pricing_tier', 'retail')
                         ->sum('total_units'),
                     'wholesale' => (int) Order::query()
-                        ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
-                        ->whereDate('created_at', $date)
+                        ->whereIn('branch_id', $selectedBranchIds)->whereDate('created_at', $dateString)
                         ->where('pricing_tier', 'wholesale')
                         ->sum('total_units'),
                 ];
@@ -46,21 +52,21 @@ class ReportController extends Controller
         $branchPerformance = Order::query()
             ->select('branches.name', DB::raw('count(orders.id) as orders_count'))
             ->join('branches', 'branches.id', '=', 'orders.branch_id')
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('orders.branch_id', $user->branch_id))
+            ->whereIn('orders.branch_id', $selectedBranchIds)
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo])
             ->where('orders.status', 'accepted')
             ->groupBy('branches.name')
             ->orderByDesc('orders_count')
             ->get();
 
-        $inventoryDate = now()->toDateString();
         $inventoryPerformance = Branch::query()
-            ->whereIn('id', $inventoryBranchIds)
+            ->whereIn('id', $selectedBranchIds)
             ->orderBy('name')
             ->get()
-            ->map(function (Branch $branch) use ($inventoryDate) {
+            ->map(function (Branch $branch) use ($dateFrom, $dateTo) {
                 $snapshotQuery = BranchInventorySnapshot::query()
                     ->where('branch_id', $branch->id)
-                    ->whereDate('inventory_date', $inventoryDate);
+                    ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()]);
 
                 return [
                     'branch' => $branch,
@@ -73,12 +79,13 @@ class ReportController extends Controller
 
         $staleStockBatches = BranchStockBatch::query()
             ->with(['branch', 'product'])
-            ->whereIn('branch_id', $inventoryBranchIds)
+            ->whereIn('branch_id', $selectedBranchIds)
             ->where('remaining_units', '>', 0)
+            ->whereBetween('produced_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->whereDate('produced_date', '<=', now()->subHours(72)->toDateString())
             ->orderBy('produced_date')
             ->get();
 
-        return view('reports.index', compact('salesTrend', 'branchPerformance', 'inventoryPerformance', 'staleStockBatches'));
+        return view('reports.index', compact('salesTrend', 'branchPerformance', 'inventoryPerformance', 'staleStockBatches', 'filterBranches', 'selectedBranchIds', 'dateFrom', 'dateTo'));
     }
 }

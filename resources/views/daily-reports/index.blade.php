@@ -50,7 +50,7 @@
                 <h3 class="card-title">{{ $selectedBranch->name }} Daily Report for {{ \Carbon\Carbon::parse($reportDate)->format('d M Y') }}</h3>
             </div>
             <div class="card-body table-responsive p-0">
-                <table class="table table-striped table-hover text-nowrap daily-report-table">
+                <table class="table table-striped table-hover text-nowrap daily-report-table js-record-table">
                     <thead>
                         <tr>
                             <th>Product</th>

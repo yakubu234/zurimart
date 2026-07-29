@@ -54,7 +54,7 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table table-bordered text-nowrap mb-0 raw-material-catalogue">
+                <table class="table table-bordered text-nowrap mb-0 raw-material-catalogue js-record-table">
                     <thead>
                         <tr>
                             <th class="material-code-column">Code</th>

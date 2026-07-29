@@ -10,38 +10,46 @@ use App\Models\Order;
 use App\Models\SystemNotification;
 use App\Services\AppSettingsService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
-        $today = now()->toDateString();
-        $weekStart = now()->startOfWeek()->toDateString();
         $user = Auth::user();
-        $inventoryBranchIds = Branch::query()
-            ->when(
-                $user?->canManageAllDailyReports(),
-                fn ($query) => $query,
-                fn ($query) => $query->when($user?->branch_id, fn ($branchQuery) => $branchQuery->whereKey($user->branch_id))
-            )
-            ->pluck('id');
+        $filters = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => ['integer', 'distinct', 'exists:branches,id'],
+        ]);
+        $dateFrom = Carbon::parse($filters['date_from'] ?? now()->subDays(6)->toDateString())->startOfDay();
+        $dateTo = Carbon::parse($filters['date_to'] ?? now()->toDateString())->endOfDay();
+        $filterBranches = Branch::query()
+            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id))
+            ->orderBy('name')->get();
+        $requestedBranchIds = collect($filters['branch_ids'] ?? [])->map(fn ($id) => (int) $id);
+        abort_if($requestedBranchIds->diff($filterBranches->pluck('id'))->isNotEmpty(), 403);
+        $selectedBranchIds = ($requestedBranchIds->isNotEmpty() ? $requestedBranchIds : $filterBranches->pluck('id'))->values();
+        $capacityDate = $dateTo->toDateString();
         $lowStockThreshold = (int) app(AppSettingsService::class)->get('notifications.low_stock_threshold', 150);
 
         $ordersQuery = Order::query()
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id));
+            ->whereIn('branch_id', $selectedBranchIds)
+            ->whereBetween('created_at', [$dateFrom, $dateTo]);
 
         $branchesQuery = Branch::query()
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->whereKey($user->branch_id));
+            ->whereIn('id', $selectedBranchIds);
 
         $stats = [
             'totalRevenue' => (float) (clone $ordersQuery)->where('status', 'accepted')->sum('total_amount'),
             'totalOrders' => (clone $ordersQuery)->count(),
             'pendingOrders' => (clone $ordersQuery)->where('status', 'pending')->count(),
             'activeBranches' => (clone $branchesQuery)->where('status', 'available')->count(),
-            'lowStockItems' => $this->lowStockProductCount($inventoryBranchIds->all(), $lowStockThreshold),
+            'lowStockItems' => $this->lowStockProductCount($selectedBranchIds->all(), $lowStockThreshold, $dateTo->toDateString()),
             'wholesaleShare' => (int) round(
                 ((int) (clone $ordersQuery)->where('pricing_tier', 'wholesale')->sum('total_units') / max((int) (clone $ordersQuery)->sum('total_units'), 1)) * 100
             ),
@@ -54,7 +62,7 @@ class DashboardController extends Controller
             ->get();
 
         $branches = (clone $branchesQuery)
-            ->with(['capacitySlots' => fn ($query) => $query->whereDate('production_date', $today)])
+            ->with(['capacitySlots' => fn ($query) => $query->whereDate('production_date', $capacityDate)])
             ->get()
             ->map(function (Branch $branch) {
                 $slot = $branch->capacitySlots->first();
@@ -68,20 +76,18 @@ class DashboardController extends Controller
                 ];
             });
 
-        $salesTrend = collect(range(0, 6))
-            ->map(function (int $offset) use ($user) {
-                $date = Carbon::now()->subDays(6 - $offset)->toDateString();
+        $salesTrend = collect(Carbon::parse($dateFrom)->toPeriod($dateTo))
+            ->map(function (Carbon $date) use ($selectedBranchIds) {
+                $dateString = $date->toDateString();
 
                 return [
-                    'day' => Carbon::parse($date)->format('D'),
+                    'day' => $date->format('d M'),
                     'retail' => (int) Order::query()
-                        ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
-                        ->whereDate('created_at', $date)
+                        ->whereIn('branch_id', $selectedBranchIds)->whereDate('created_at', $dateString)
                         ->where('pricing_tier', 'retail')
                         ->sum('total_units'),
                     'wholesale' => (int) Order::query()
-                        ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
-                        ->whereDate('created_at', $date)
+                        ->whereIn('branch_id', $selectedBranchIds)->whereDate('created_at', $dateString)
                         ->where('pricing_tier', 'wholesale')
                         ->sum('total_units'),
                 ];
@@ -90,45 +96,45 @@ class DashboardController extends Controller
         $branchPerformance = Order::query()
             ->select('branches.name', DB::raw('count(orders.id) as orders_count'))
             ->join('branches', 'branches.id', '=', 'orders.branch_id')
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('orders.branch_id', $user->branch_id))
+            ->whereIn('orders.branch_id', $selectedBranchIds)
             ->where('orders.status', 'accepted')
-            ->whereDate('orders.created_at', '>=', $weekStart)
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo])
             ->groupBy('branches.name')
             ->orderByDesc('orders_count')
             ->get();
 
         $notifications = SystemNotification::query()
-            ->when($user?->isBranchRestricted(), fn ($query) => $query->where('branch_id', $user->branch_id))
+            ->whereIn('branch_id', $selectedBranchIds)
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->latest()
             ->take(3)
             ->get();
 
-        $inventoryDate = $today;
-
         $openingUnits = (int) BranchInventorySnapshot::query()
-            ->whereIn('branch_id', $inventoryBranchIds)
-            ->whereDate('inventory_date', $inventoryDate)
+            ->whereIn('branch_id', $selectedBranchIds)
+            ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->sum('opening_units');
 
         $closingUnits = (int) BranchInventorySnapshot::query()
-            ->whereIn('branch_id', $inventoryBranchIds)
-            ->whereDate('inventory_date', $inventoryDate)
+            ->whereIn('branch_id', $selectedBranchIds)
+            ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->sum('closing_units');
 
         $staleStockCount = BranchStockBatch::query()
-            ->whereIn('branch_id', $inventoryBranchIds)
+            ->whereIn('branch_id', $selectedBranchIds)
             ->where('remaining_units', '>', 0)
+            ->whereBetween('produced_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->whereDate('produced_date', '<=', now()->subHours(72)->toDateString())
             ->count();
 
         $inventorySummary = Branch::query()
-            ->whereIn('id', $inventoryBranchIds)
+            ->whereIn('id', $selectedBranchIds)
             ->orderBy('name')
             ->get()
-            ->map(function (Branch $branch) use ($inventoryDate) {
+            ->map(function (Branch $branch) use ($dateFrom, $dateTo) {
                 $snapshotQuery = BranchInventorySnapshot::query()
                     ->where('branch_id', $branch->id)
-                    ->whereDate('inventory_date', $inventoryDate);
+                    ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()]);
 
                 return [
                     'branch' => $branch,
@@ -149,11 +155,16 @@ class DashboardController extends Controller
             'openingUnits',
             'closingUnits',
             'staleStockCount',
-            'inventorySummary'
+            'inventorySummary',
+            'filterBranches',
+            'selectedBranchIds',
+            'dateFrom',
+            'dateTo',
+            'capacityDate'
         ));
     }
 
-    protected function lowStockProductCount(array $branchIds, int $threshold): int
+    protected function lowStockProductCount(array $branchIds, int $threshold, string $asOfDate): int
     {
         if (empty($branchIds)) {
             return 0;
@@ -162,6 +173,7 @@ class DashboardController extends Controller
         $latestSnapshots = BranchInventorySnapshot::query()
             ->select('product_id', 'branch_id', DB::raw('MAX(inventory_date) as latest_date'))
             ->whereIn('branch_id', $branchIds)
+            ->whereDate('inventory_date', '<=', $asOfDate)
             ->groupBy('product_id', 'branch_id');
 
         $lowStockProducts = BranchInventorySnapshot::query()
