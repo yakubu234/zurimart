@@ -9,6 +9,7 @@ use App\Models\RawMaterial;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -57,6 +58,33 @@ class AuditTrailTest extends TestCase
             'action' => 'deleted',
             'subject_label' => 'Premium Flour',
         ]);
+    }
+
+    public function test_deleting_a_branch_records_the_audit_log_without_a_stale_foreign_key(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $this->actingAs($admin);
+
+        $branch = Branch::query()->create([
+            'code' => 'BR-DELETE',
+            'name' => 'Temporary Branch',
+            'manager_name' => 'Manager',
+            'daily_capacity_units' => 1000,
+            'status' => 'available',
+        ]);
+        $branchId = $branch->id;
+
+        $branch->delete();
+
+        $log = AuditLog::query()
+            ->where('auditable_type', Branch::class)
+            ->where('auditable_id', $branchId)
+            ->where('action', 'deleted')
+            ->firstOrFail();
+
+        $this->assertNull($log->branch_id);
+        $this->assertSame('Temporary Branch', $log->old_values['name']);
+        $this->assertDatabaseMissing('branches', ['id' => $branchId]);
     }
 
     public function test_passwords_and_setting_secrets_are_redacted(): void
@@ -133,6 +161,37 @@ class AuditTrailTest extends TestCase
             'auditable_type' => User::class,
             'auditable_id' => (string) $admin->id,
         ]);
+    }
+
+    public function test_stale_user_branch_does_not_break_login_or_logout_auditing(): void
+    {
+        $branch = Branch::query()->create([
+            'code' => 'BR-STALE',
+            'name' => 'Former Branch',
+            'manager_name' => 'Manager',
+            'daily_capacity_units' => 1000,
+            'status' => 'available',
+        ]);
+        $user = User::factory()->create([
+            'role' => 'production_branch_manager',
+            'branch_id' => $branch->id,
+            'status' => 'active',
+        ]);
+
+        $branch->delete();
+        $this->assertSame($branch->id, $user->fresh()->branch_id);
+
+        Event::dispatch(new Login('web', $user, false));
+        Event::dispatch(new Logout('web', $user));
+
+        foreach (['logged_in', 'logged_out'] as $action) {
+            $log = AuditLog::query()
+                ->where('user_id', $user->id)
+                ->where('action', $action)
+                ->firstOrFail();
+
+            $this->assertNull($log->branch_id);
+        }
     }
 
     public function test_audit_page_has_adjustable_pagination(): void

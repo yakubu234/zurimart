@@ -146,11 +146,19 @@ class AuditTrailService
     private function branchId(Model $model): ?int
     {
         if ($model instanceof Branch) {
-            return (int) $model->getKey();
+            // The deleted event is dispatched after the branch row is removed.
+            // Referencing its former key here would violate audit_logs_branch_id_foreign.
+            return $model->exists ? (int) $model->getKey() : null;
         }
 
         $branchId = $model->getAttribute('branch_id');
 
-        return filled($branchId) ? (int) $branchId : null;
+        if (! filled($branchId)) {
+            return null;
+        }
+
+        // Legacy user records can retain a branch_id after that branch is deleted.
+        // Never let a stale assignment prevent login, logout, or another action.
+        return Branch::query()->whereKey($branchId)->exists() ? (int) $branchId : null;
     }
 }
