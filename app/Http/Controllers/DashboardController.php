@@ -7,8 +7,10 @@ use App\Models\BranchInventorySnapshot;
 use App\Models\BranchStockBatch;
 use App\Models\BranchCapacitySlot;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\SystemNotification;
 use App\Services\AppSettingsService;
+use App\Services\BranchProductStockService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,6 +19,10 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly BranchProductStockService $branchStock)
+    {
+    }
+
     public function __invoke(Request $request): View
     {
         $user = Auth::user();
@@ -115,10 +121,13 @@ class DashboardController extends Controller
             ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->sum('opening_units');
 
-        $closingUnits = (int) BranchInventorySnapshot::query()
-            ->whereIn('branch_id', $selectedBranchIds)
-            ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
-            ->sum('closing_units');
+        $productIds = Product::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $closingStock = $this->branchStock->stockMap(
+            $selectedBranchIds->all(),
+            $productIds,
+            stockDate: $dateTo->toDateString()
+        );
+        $closingUnits = (int) collect($closingStock)->flatten()->sum();
 
         $staleStockCount = BranchStockBatch::query()
             ->whereIn('branch_id', $selectedBranchIds)
@@ -131,7 +140,7 @@ class DashboardController extends Controller
             ->whereIn('id', $selectedBranchIds)
             ->orderBy('name')
             ->get()
-            ->map(function (Branch $branch) use ($dateFrom, $dateTo) {
+            ->map(function (Branch $branch) use ($dateFrom, $dateTo, $closingStock) {
                 $snapshotQuery = BranchInventorySnapshot::query()
                     ->where('branch_id', $branch->id)
                     ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()]);
@@ -141,7 +150,11 @@ class DashboardController extends Controller
                     'opening_units' => (int) (clone $snapshotQuery)->sum('opening_units'),
                     'produced_units' => (int) (clone $snapshotQuery)->sum('produced_units'),
                     'sold_units' => (int) (clone $snapshotQuery)->sum('sold_units'),
-                    'closing_units' => (int) (clone $snapshotQuery)->sum('closing_units'),
+                    // Closing stock is a balance at the end of the period, not a
+                    // value that can be added once for every day in the period.
+                    // It must also exclude accepted orders reserved for that day,
+                    // matching the available-stock badges used elsewhere.
+                    'closing_units' => (int) collect($closingStock[$branch->id] ?? [])->sum(),
                 ];
             });
 

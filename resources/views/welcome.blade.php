@@ -933,7 +933,7 @@
 
     <footer id="contact">
         <div class="container">
-            <div class="footer-band">
+            <!-- <div class="footer-band">
                 <div class="footer-band-details">
                     <div class="footer-band-item">
                         <strong>Address</strong>
@@ -951,9 +951,9 @@
                 <div class="footer-band-item footer-band-cta">
                     <strong>Order Online</strong>
                     <p>Need bread for home, retail shelves, or bulk supply? Open the public order page and submit your request now.</p>
-                    <a class="btn" href="{{ route('orders.create') }}">Go to Public Order Form</a>
+                    <a class="btn" href="">Go to Public Order Form</a>
                 </div>
-            </div>
+            </div> -->
 
             <div class="footer-grid">
                 <div class="footer-col">

@@ -43,7 +43,7 @@
 @stop
 
 @section('auth_footer')
-    <p class="mb-1 text-muted">Use `info@zurimartbakeryservices.com` and password `password`.</p>
+    <!-- <p class="mb-1 text-muted">Use `info@zurimartbakeryservices.com` and password `password`.</p> -->
     <p class="mb-0">
         <a href="{{ route('orders.create') }}">Continue to the public order form</a>
     </p>

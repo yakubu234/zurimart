@@ -6,6 +6,8 @@ use App\Models\Branch;
 use App\Models\BranchInventorySnapshot;
 use App\Models\BranchStockBatch;
 use App\Models\Order;
+use App\Models\Product;
+use App\Services\BranchProductStockService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -14,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    public function __construct(private readonly BranchProductStockService $branchStock)
+    {
+    }
+
     public function index(Request $request): View
     {
         $user = Auth::user();
@@ -59,11 +65,18 @@ class ReportController extends Controller
             ->orderByDesc('orders_count')
             ->get();
 
+        $productIds = Product::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $closingStock = $this->branchStock->stockMap(
+            $selectedBranchIds->all(),
+            $productIds,
+            stockDate: $dateTo->toDateString()
+        );
+
         $inventoryPerformance = Branch::query()
             ->whereIn('id', $selectedBranchIds)
             ->orderBy('name')
             ->get()
-            ->map(function (Branch $branch) use ($dateFrom, $dateTo) {
+            ->map(function (Branch $branch) use ($dateFrom, $dateTo, $closingStock) {
                 $snapshotQuery = BranchInventorySnapshot::query()
                     ->where('branch_id', $branch->id)
                     ->whereBetween('inventory_date', [$dateFrom->toDateString(), $dateTo->toDateString()]);
@@ -73,7 +86,7 @@ class ReportController extends Controller
                     'opening_units' => (int) (clone $snapshotQuery)->sum('opening_units'),
                     'produced_units' => (int) (clone $snapshotQuery)->sum('produced_units'),
                     'sold_units' => (int) (clone $snapshotQuery)->sum('sold_units'),
-                    'closing_units' => (int) (clone $snapshotQuery)->sum('closing_units'),
+                    'closing_units' => (int) collect($closingStock[$branch->id] ?? [])->sum(),
                 ];
             });
 
