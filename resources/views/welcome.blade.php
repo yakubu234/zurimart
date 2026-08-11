@@ -545,7 +545,7 @@
                 radial-gradient(circle at right top, rgba(255, 255, 255, 0.06), transparent 18%),
                 #031321;
             color: #fff;
-            padding-top: 100px;
+            padding-top: 80px;
         }
 
         .footer-band {
@@ -617,12 +617,24 @@
 
         .footer-grid {
             align-items: flex-start;
+            gap: 12px;
             padding-bottom: 56px;
         }
 
         .footer-col {
             flex: 1 1 220px;
             min-width: 220px;
+        }
+
+        .footer-col:last-child {
+            flex-grow: 1.25;
+        }
+
+        @media (min-width: 769px) {
+            .footer-col:last-child p:nth-of-type(3) {
+                white-space: nowrap;
+                font-size: 0.94rem;
+            }
         }
 
         .footer-logo {
@@ -981,8 +993,10 @@
                 </div>
                 <div class="footer-col">
                     <h3>Contact Us</h3>
+                    <p><strong>Address:</strong> 17 Airiofolo Ave, Oka, Benin City 300102, Edo, Nigeria</p>
+                    <p><strong>Phone:</strong> <a href="tel:+2349039893189">09039893189</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:order@zurimartbakeryservices.com">order@zurimartbakeryservices.com</a></p>
                     <p>Monday - Saturday: 8am - 6pm</p>
-                    <p>For household, retail, and wholesale enquiries, use the contact details above or the order button in this section.</p>
                 </div>
             </div>
         </div>
